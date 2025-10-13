@@ -1,7 +1,71 @@
-.idea
-backend.db
-*.pyc
-__pycache__
-migrations
-alembic.ini
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# FastAPI
 .env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+backend.db
+cicd_autodoc.db
+
+# Logs
+logs/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Temporary files
+temp/
+tmp/
+*.tmp
+
+# Security - Never commit these!
+# GitHub tokens, API keys, secrets
+.env
+.env.local
+.env.production
+.env.staging
+config.json
+secrets.json
+
+# Alembic
+migrations/
+alembic.ini
