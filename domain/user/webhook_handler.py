@@ -10,6 +10,32 @@ from .schemas import WebhookEventResponse
 logger = get_logger("webhook_handler")
 
 
+# 사용자 인증 관련 함수들
+async def get_current_user(user_id: int):
+    """사용자 ID로 사용자 정보 가져오기"""
+    from database import get_db
+    from models import User
+    from sqlalchemy.orm import Session
+    
+    db_gen = get_db()
+    db: Session = next(db_gen)
+    
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        return user
+    finally:
+        db.close()
+
+
+async def get_user_access_token(user) -> str:
+    """사용자의 액세스 토큰 가져오기"""
+    if user.access_token is None or not str(user.access_token).strip():
+        raise HTTPException(status_code=401, detail="User access token not found. Please login again.")
+    return str(user.access_token)
+
+
 class WebhookHandler:
     """GitHub 웹훅 처리 클래스"""
     
@@ -120,9 +146,15 @@ async def handle_push_event(data: dict):
         return {"message": f"Not {default_branch} branch, ignored"}
     
     commits = data.get("commits", [])
+    full_name = repository.get("full_name")
+    
+    # 저장소에 연결된 액세스 토큰 가져오기
+    access_token = await _get_repository_access_token(full_name)
+    
     repo_info = {
-        "full_name": repository.get("full_name"),
-        "default_branch": default_branch
+        "full_name": full_name,
+        "default_branch": default_branch,
+        "access_token": access_token
     }
     
     # 핵심 코드 변화만 추출
@@ -164,10 +196,16 @@ async def extract_code_changes(commit: dict, repo_info: dict):
     commit_sha = commit.get("id")
     commit_message = commit.get("message", "")
     
-    # GitHub API로 파일 변경 정보만 가져오기
+    # GitHub API로 파일 변경 정보 가져오기 (액세스 토큰 사용)
     url = f"https://api.github.com/repos/{repo_info['full_name']}/commits/{commit_sha}"
+    
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    access_token = repo_info.get("access_token")
+    if access_token:
+        headers["Authorization"] = f"token {access_token}"
+    
     async with httpx.AsyncClient() as client:
-        response = await client.get(url, headers={"Accept": "application/vnd.github.v3+json"})
+        response = await client.get(url, headers=headers)
         
         log_github_api_call(url, response.status_code, 
                            commit_sha=commit_sha[:8] if commit_sha else "unknown")
@@ -176,7 +214,9 @@ async def extract_code_changes(commit: dict, repo_info: dict):
             logger.warning("Failed to fetch commit details", extra={
                 "url": url,
                 "status_code": response.status_code,
-                "commit_sha": commit_sha
+                "commit_sha": commit_sha,
+                "has_token": bool(access_token),
+                "response_text": response.text[:200] if response.status_code != 404 else "Not found"
             })
             return None
         
@@ -193,13 +233,21 @@ async def extract_code_changes(commit: dict, repo_info: dict):
             
             # 코드 파일이고 의미있는 변화가 있는 경우만
             if file_ext in code_extensions and file_info.get("changes", 0) > 0:
+                patch_content = file_info.get("patch")
                 code_files.append({
                     "filename": filename,
                     "status": file_info.get("status"),  # added, modified, removed
                     "changes": file_info.get("changes", 0),
                     "additions": file_info.get("additions", 0),
-                    "deletions": file_info.get("deletions", 0)
+                    "deletions": file_info.get("deletions", 0),
+                    "patch": patch_content  # 실제 diff 내용 추가!
                 })
+                
+                # 디버깅: patch 내용 확인
+                if patch_content:
+                    logger.info(f"Found patch for {filename}: {len(patch_content)} characters")
+                else:
+                    logger.warning(f"No patch content for {filename} despite {file_info.get('changes', 0)} changes")
         
         # 코드 변화가 없으면 None 반환
         if not code_files:
@@ -241,9 +289,13 @@ async def handle_pull_request_event(data: dict):
         "merged_at": pull_request.get("merged_at")
     }
     
+    full_name = repository.get("full_name")
+    access_token = await _get_repository_access_token(full_name)
+    
     repo_info = {
-        "full_name": repository.get("full_name"),
-        "default_branch": default_branch
+        "full_name": full_name,
+        "default_branch": default_branch,
+        "access_token": access_token
     }
     
     # PR의 코드 변화만 추출
@@ -456,9 +508,9 @@ async def _trigger_document_generation(code_change_id: int):
 
 
 async def save_webhook_info(webhook_data: dict):
-    """Webhook 정보를 데이터베이스에 저장"""
+    """Webhook 정보를 데이터베이스에 저장하고 Repository도 자동 등록"""
     from database import get_db
-    from models import WebhookRegistration
+    from models import WebhookRegistration, Repository, User
     from sqlalchemy.orm import Session
     
     # 데이터베이스 세션 가져오기
@@ -466,14 +518,48 @@ async def save_webhook_info(webhook_data: dict):
     db: Session = next(db_gen)
     
     try:
-        # WebhookRegistration 객체 생성
+        repo_owner = webhook_data.get("repo_owner")
+        repo_name = webhook_data.get("repo_name")
+        full_name = f"{repo_owner}/{repo_name}"
+        access_token = webhook_data.get("access_token")
+        
+        # 1. 액세스 토큰으로 User 찾기
+        user = db.query(User).filter(User.access_token == access_token).first()
+        if not user:
+            logger.warning(f"User not found for access_token when saving webhook for {full_name}")
+        
+        # 2. Repository 찾기 또는 생성
+        repository = db.query(Repository).filter(Repository.full_name == full_name).first()
+        
+        if not repository:
+            # GitHub API로 저장소 상세 정보 가져오기 (토큰이 있는 경우만)
+            if access_token:
+                repo_details = await _fetch_repository_details(full_name, access_token)
+            else:
+                repo_details = {"id": 0, "default_branch": "main", "private": False}
+            
+            repository = Repository(
+                github_id=repo_details.get("id", 0),
+                name=repo_name,
+                full_name=full_name,
+                default_branch=repo_details.get("default_branch", "main"),
+                is_private=repo_details.get("private", False),
+                owner_id=user.id if user else None
+            )
+            db.add(repository)
+            db.commit()
+            db.refresh(repository)
+            logger.info(f"Repository {full_name} created and linked to user {user.username if user else 'unknown'}")
+        
+        # 3. WebhookRegistration 객체 생성
         webhook_registration = WebhookRegistration(
-            repo_owner=webhook_data.get("repo_owner"),
-            repo_name=webhook_data.get("repo_name"),
+            repo_owner=repo_owner,
+            repo_name=repo_name,
             webhook_id=webhook_data.get("webhook_id"),
             webhook_url=webhook_data.get("webhook_url"),
-            access_token=webhook_data.get("access_token"),  # 실제로는 암호화 필요
-            is_active=True
+            access_token=access_token,  # 실제로는 암호화 필요
+            is_active=True,
+            repository_id=repository.id  # Repository 연결
         )
         
         # 데이터베이스에 저장
@@ -493,6 +579,57 @@ async def save_webhook_info(webhook_data: dict):
         raise HTTPException(status_code=500, detail=f"Failed to save webhook info: {str(e)}")
     finally:
         db.close()
+
+
+async def _get_repository_access_token(full_name: str) -> str:
+    """저장소의 액세스 토큰 가져오기"""
+    from database import get_db
+    from models import WebhookRegistration
+    from sqlalchemy.orm import Session
+    
+    db_gen = get_db()
+    db: Session = next(db_gen)
+    
+    try:
+        # 저장소의 웹훅 등록 정보에서 토큰 가져오기
+        repo_owner, repo_name = full_name.split("/") if "/" in full_name else (full_name, "")
+        webhook_reg = db.query(WebhookRegistration).filter(
+            WebhookRegistration.repo_owner == repo_owner,
+            WebhookRegistration.repo_name == repo_name,
+            WebhookRegistration.is_active == True
+        ).first()
+        
+        if webhook_reg is not None and webhook_reg.access_token is not None:
+            return str(webhook_reg.access_token)
+        else:
+            logger.warning(f"No access token found for repository {full_name}")
+            return ""
+            
+    except Exception as e:
+        logger.error(f"Failed to get access token for {full_name}: {e}")
+        return ""
+    finally:
+        db.close()
+
+
+async def _fetch_repository_details(full_name: str, access_token: str) -> dict:
+    """GitHub API로 저장소 상세 정보 가져오기"""
+    import httpx
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.github.com/repos/{full_name}",
+            headers={
+                "Authorization": f"token {access_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+        )
+        
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.warning(f"Failed to fetch repository details for {full_name}: {response.status_code}")
+            return {"id": 0, "default_branch": "main", "private": False}
 
 
 async def delete_webhook_info(webhook_id: int):
