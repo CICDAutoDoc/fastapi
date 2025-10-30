@@ -401,8 +401,6 @@ async def save_code_changes(changes: dict, source: str):
                 code_change = CodeChange(
                     commit_sha=sha,
                     commit_message=message,
-                    author_name=(commit.get('author') or {}).get('name') if isinstance(commit.get('author'), dict) else commit.get('author'),
-                    author_email=(commit.get('author') or {}).get('email') if isinstance(commit.get('author'), dict) else None,
                     repository_id=repo.id if repo else None,
                     source=source,
                     total_changes=total or 0,
@@ -437,8 +435,6 @@ async def save_code_changes(changes: dict, source: str):
             code_change = CodeChange(
                 commit_sha=sha,
                 commit_message=message,
-                author_name=changes.get('merged_by') or changes.get('author'),
-                author_email=None,
                 repository_id=repo.id if repo else None,
                 source=source,
                 total_changes=total or 0,

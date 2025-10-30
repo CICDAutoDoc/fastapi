@@ -119,8 +119,8 @@ class DocumentService:
             
             logger.info(f"Created pending document with ID: {document.id}")
             
-            # 문서 생성
-            result = await self.generator.generate_document(code_input)
+            # 새 문서 생성 (기존 문서 없음)
+            result = await self.generator.generate_document(code_input, existing_document=None)
             
             if result["success"]:
                 # 성공적으로 생성된 경우 업데이트
@@ -210,8 +210,9 @@ class DocumentService:
             # 새로운 변경사항을 포함한 입력 데이터 준비 (누적)
             code_input = self._prepare_cumulative_code_input(document, code_change, file_changes)
             
-            # 문서 재생성 (기존 내용 + 새 내용)
-            result = await self.generator.generate_document(code_input)
+            # 기존 문서 업데이트 (diff 기반)
+            existing_content = getattr(document, 'content', '') or ""
+            result = await self.generator.generate_document(code_input, existing_document=existing_content)
             
             if result["success"]:
                 # 문서 업데이트
@@ -352,8 +353,8 @@ class DocumentService:
         # SQLAlchemy 모델 속성을 문자열로 안전하게 변환
         commit_sha = str(code_change.commit_sha) if code_change.commit_sha is not None else ""
         commit_message = str(code_change.commit_message) if code_change.commit_message is not None else ""
-        author_name = str(code_change.author_name) if code_change.author_name is not None else "Unknown"
         repository_name = code_change.repository.full_name if code_change.repository else "unknown"
+        repository_owner = code_change.repository.owner.username if code_change.repository and code_change.repository.owner else "unknown"
         total_changes = getattr(code_change, "total_changes",0) if code_change.total_changes is not None else 0
         
         # timestamp 처리
@@ -365,8 +366,8 @@ class DocumentService:
         return CodeChangeInput(
             commit_sha=commit_sha,
             commit_message=commit_message,
-            author_name=author_name,
             repository_name=repository_name,
+            repository_owner=repository_owner,
             timestamp=timestamp,
             files=files_data,
             total_changes=total_changes
@@ -411,8 +412,8 @@ class DocumentService:
         
         # SQLAlchemy 모델 속성을 문자열로 안전하게 변환
         commit_sha = str(code_change.commit_sha) if code_change.commit_sha is not None else ""
-        author_name = str(code_change.author_name) if code_change.author_name is not None else "Unknown"
         repository_name = str(document.repository_name) if document.repository_name is not None else "unknown"
+        repository_owner = code_change.repository.owner.username if code_change.repository and code_change.repository.owner else "unknown"
         total_changes = getattr(code_change, "total_changes", 0) if code_change.total_changes is not None else 0
         
         # timestamp 처리
@@ -424,8 +425,8 @@ class DocumentService:
         return CodeChangeInput(
             commit_sha=commit_sha,
             commit_message=cumulative_message,
-            author_name=author_name,
             repository_name=repository_name,
+            repository_owner=repository_owner,
             timestamp=timestamp,
             files=files_data,
             total_changes=total_changes

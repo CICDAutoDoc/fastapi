@@ -1,9 +1,9 @@
 import asyncio
 import json
+import os
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 from dataclasses import dataclass
-
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
@@ -19,8 +19,8 @@ class CodeChangeInput:
     """코드 변경 입력 데이터"""
     commit_sha: str
     commit_message: str
-    author_name: str
     repository_name: str
+    repository_owner: str
     timestamp: str
     files: List[Dict[str, Any]]
     total_changes: int
@@ -29,11 +29,13 @@ class CodeChangeInput:
 class DocumentState(TypedDict):
     """문서 생성 상태"""
     code_input: CodeChangeInput
+    existing_document: Optional[str]  # 기존 문서 내용
     analysis_result: str
     document_content: str
     summary: str
     metadata: Dict[str, Any]
     messages: List[Any]
+    is_update: bool  # 업데이트인지 새로운 문서인지 구분
 
 
 class DocumentGenerator:
@@ -43,26 +45,35 @@ class DocumentGenerator:
         self.llm = ChatOpenAI(
             model="gpt-4o-mini", 
             temperature=0.3,
-            api_key=openai_api_key
+            api_key=openai_api_key or os.getenv("OPENAI_API_KEY")
         )
         self.parser = StrOutputParser()
         self.workflow = self._build_workflow()
     
     def _build_workflow(self) -> StateGraph:
-        """Langgraph 워크플로우 구성"""
+        """Langgraph 워크플로우 구성 - diff 기반 업데이트"""
         
         # 상태 그래프 생성
         workflow = StateGraph(DocumentState)
         
         # 노드 추가
         workflow.add_node("analyze_changes", self._analyze_changes)
-        workflow.add_node("generate_document", self._generate_document)
+        workflow.add_node("update_document", self._update_document)  # 기존 문서 업데이트
+        workflow.add_node("create_new_document", self._create_new_document)  # 새 문서 생성
         workflow.add_node("create_summary", self._create_summary)
         
-        # 엣지 추가
+        # 조건부 엣지 추가
         workflow.set_entry_point("analyze_changes")
-        workflow.add_edge("analyze_changes", "generate_document")
-        workflow.add_edge("generate_document", "create_summary")
+        workflow.add_conditional_edges(
+            "analyze_changes",
+            self._route_document_generation,  # 기존 문서 있는지 확인
+            {
+                "update": "update_document",
+                "create_new": "create_new_document"
+            }
+        )
+        workflow.add_edge("update_document", "create_summary")
+        workflow.add_edge("create_new_document", "create_summary")
         workflow.add_edge("create_summary", END)
         
         return workflow.compile()
@@ -91,8 +102,8 @@ class DocumentGenerator:
 **커밋 정보:**
 - SHA: {code_input.commit_sha}
 - 메시지: {code_input.commit_message}
-- 작성자: {code_input.author_name}
 - 저장소: {code_input.repository_name}
+- 소유자: {code_input.repository_owner}
 - 시간: {code_input.timestamp}
 - 총 변경 라인: {code_input.total_changes}
 
@@ -119,8 +130,68 @@ class DocumentGenerator:
             state["analysis_result"] = f"분석 실패: {str(e)}"
         
         return state
+
+    def _route_document_generation(self, state: DocumentState) -> str:
+        """기존 문서가 있는지 확인하여 라우팅"""
+        if state.get("existing_document") and state.get("is_update"):
+            return "update"
+        else:
+            return "create_new"
     
-    async def _generate_document(self, state: DocumentState) -> DocumentState:
+    async def _update_document(self, state: DocumentState) -> DocumentState:
+        """기존 문서를 diff 기반으로 업데이트"""
+        code_input = state["code_input"]
+        analysis = state["analysis_result"]
+        existing_doc = state["existing_document"]
+        
+        # diff 정보 준비
+        diff_sections = []
+        for file_info in code_input.files:
+            diff_sections.append(f"**{file_info['filename']}** ({file_info['status']}):")
+            if file_info.get('patch'):
+                diff_sections.append(f"```diff\n{file_info['patch'][:800]}\n```")
+            else:
+                diff_sections.append("변경사항 없음")
+        
+        diff_info = "\n".join(diff_sections)
+        
+        update_prompt = f"""
+기존 문서를 새로운 변경사항으로 업데이트해주세요.
+
+**기존 문서:**
+{existing_doc}
+
+**새로운 변경사항 분석:**
+{analysis}
+
+**코드 변경사항 (diff):**
+{diff_info}
+
+**업데이트 지침:**
+1. 기존 문서의 구조와 형식을 유지하세요
+2. 새로운 변경사항을 적절한 섹션에 추가하거나 기존 내용을 수정하세요
+3. 변경사항이 기존 내용과 중복되지 않도록 주의하세요
+4. 날짜나 버전 정보가 있다면 업데이트하세요
+5. 전체적인 문서의 일관성을 유지하세요
+
+업데이트된 전체 문서를 마크다운 형식으로 반환해주세요.
+"""
+        
+        messages = [
+            SystemMessage(content="당신은 기술 문서를 업데이트하는 전문가입니다. 기존 문서에 새로운 변경사항을 자연스럽게 통합해주세요."),
+            HumanMessage(content=update_prompt)
+        ]
+        
+        try:
+            update_result = await self.llm.ainvoke(messages)
+            state["document_content"] = update_result.content
+            state["messages"] = add_messages(state.get("messages", []), messages)
+        except Exception as e:
+            state["document_content"] = f"# 문서 업데이트 실패\n\n{str(e)}\n\n## 기존 문서\n{existing_doc}"
+        
+        return state
+
+    async def _create_new_document(self, state: DocumentState) -> DocumentState:
         """문서 생성"""
         code_input = state["code_input"]
         analysis = state["analysis_result"]
@@ -134,8 +205,8 @@ class DocumentGenerator:
 **커밋 정보:**
 - 커밋: {code_input.commit_sha}
 - 메시지: {code_input.commit_message}
-- 작성자: {code_input.author_name}
 - 저장소: {code_input.repository_name}
+- 소유자: {code_input.repository_owner}
 
 다음 형식으로 마크다운 문서를 작성해주세요:
 
@@ -210,26 +281,33 @@ class DocumentGenerator:
         
         return state
     
-    async def generate_document(self, code_input: CodeChangeInput) -> Dict[str, Any]:
+    async def generate_document(
+        self, 
+        code_input: CodeChangeInput, 
+        existing_document: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
-        메인 문서 생성 함수
+        메인 문서 생성/업데이트 함수
         
         Args:
             code_input: 코드 변경 입력 데이터
+            existing_document: 기존 문서 내용 (업데이트 시)
             
         Returns:
             생성된 문서와 메타데이터
         """
         try:
             # 초기 상태 설정
-            initial_state = DocumentState(
-                code_input=code_input,
-                analysis_result="",
-                document_content="",
-                summary="",
-                metadata={},
-                messages=[]
-            )
+            initial_state = {
+                "code_input": code_input,
+                "existing_document": existing_document,
+                "analysis_result": "",
+                "document_content": "",
+                "summary": "",
+                "metadata": {},
+                "messages": [],
+                "is_update": existing_document is not None
+            }
             
             # 워크플로우 실행
             result = await self.workflow.ainvoke(initial_state)
@@ -277,19 +355,51 @@ def get_document_generator(openai_api_key: Optional[str] = None) -> DocumentGene
 class MockDocumentGenerator:
     """개발/테스트용 Mock 문서 생성기"""
     
-    async def generate_document(self, code_input: CodeChangeInput) -> Dict[str, Any]:
-        """Mock 문서 생성"""
+    async def generate_document(
+        self, 
+        code_input: CodeChangeInput, 
+        existing_document: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Mock 문서 생성/업데이트"""
         await asyncio.sleep(1)  # 처리 시간 시뮬레이션
         
-        title = f"코드 변경 문서: {code_input.commit_message[:50]}"
-        
-        content = f"""# {title}
+        if existing_document:
+            # 기존 문서 업데이트 시뮬레이션
+            title = f"[업데이트] {code_input.commit_message[:50]}"
+            content = f"""# 프로젝트 문서 (업데이트됨)
+
+**최근 업데이트**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## 최신 변경사항
+- **커밋**: `{code_input.commit_sha}`
+- **메시지**: {code_input.commit_message}
+- **파일 수**: {len(code_input.files)}개
+- **변경 라인**: {code_input.total_changes}라인
+
+### 이번 커밋의 주요 변경점
+"""
+            for file_info in code_input.files:
+                content += f"- `{file_info['filename']}` ({file_info['status']})\n"
+            
+            content += f"""
+---
+
+## 기존 문서 내용
+{existing_document}
+
+---
+*Mock 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
+"""
+        else:
+            # 새 문서 생성
+            title = f"코드 변경 문서: {code_input.commit_message[:50]}"
+            content = f"""# {title}
 
 ## 변경사항 개요
 - **커밋**: `{code_input.commit_sha}`
 - **메시지**: {code_input.commit_message}
-- **작성자**: {code_input.author_name}
 - **저장소**: {code_input.repository_name}
+- **소유자**: {code_input.repository_owner}
 - **시간**: {code_input.timestamp}
 - **총 변경 라인**: {code_input.total_changes}
 

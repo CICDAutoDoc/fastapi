@@ -79,8 +79,6 @@ class CodeChange(Base):
     id = Column(Integer, primary_key=True)
     commit_sha = Column(String(40), nullable=False)
     commit_message = Column(Text)
-    author_name = Column(String(100))
-    author_email = Column(String(255))
     repository_id = Column(Integer, ForeignKey("repositories.id"))
     source = Column(String(20))  # "push" or "pr_merge"
     total_changes = Column(Integer, default=0)
