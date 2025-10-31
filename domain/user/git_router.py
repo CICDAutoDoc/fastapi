@@ -28,11 +28,13 @@ router = APIRouter(prefix="/github")
     "/auth/login",
     tags=["Authentication"],
     summary="GitHub OAuth 로그인 시작",
-    description="사용자를 GitHub OAuth 인증 페이지로 리디렉션하여 로그인을 시작합니다. 'repo' 및 'admin:repo_hook' 스코프 권한을 요청합니다."
+    description="사용자를 GitHub OAuth 인증 페이지로 리디렉션하여 로그인을 시작합니다."
 )
 def login():
     """GitHub OAuth 로그인 시작"""
     scopes = "read:user,admin:repo_hook,repo"
+    # 사용자가 GitHub에서 인증을 완료하면, GitHub 앱에 등록된 'Authorization callback URL'로 리디렉션됩니다.
+    # 이 URL을 프론트엔드의 특정 경로로 설정해야 합니다. (예: https://your-frontend.com/auth/github)
     redirect_url = f"{GITHUB_AUTH_URL}?client_id={GITHUB_CLIENT_ID}&scope={scopes}"
     return RedirectResponse(redirect_url)
 
@@ -41,33 +43,39 @@ def login():
     "/auth/callback",
     tags=["Authentication"],
     summary="GitHub OAuth 콜백 처리",
-    description="GitHub로부터 인증 코드를 받아 액세스 토큰을 요청하고, 사용자 정보를 DB에 저장하거나 업데이트합니다."
+    description="프론트엔드로부터 GitHub 인증 코드를 받아 액세스 토큰을 요청하고, 토큰과 사용자 정보를 반환합니다."
 )
 async def callback(code: str):
-    """GitHub OAuth 콜백 처리 및 사용자 정보 저장"""
+    """
+    프론트엔드에서 전달받은 code를 사용하여 GitHub 액세스 토큰을 요청하고,
+    토큰과 사용자 정보를 프론트엔드로 반환합니다.
+    """
     async with httpx.AsyncClient() as client:
-        # 액세스 토큰 요청
-        response = await client.post(
+        # 1. 전달받은 code로 Access Token 요청
+        token_response = await client.post(
             GITHUB_TOKEN_URL,
             headers={"Accept": "application/json"},
             data={
                 "client_id": GITHUB_CLIENT_ID,
                 "client_secret": GITHUB_CLIENT_SECRET,
-                "code": code
-            }
+                "code": code,
+            },
         )
-        token_data = response.json()
+        token_data = token_response.json()
         access_token = token_data.get("access_token")
 
         if not access_token:
-            raise HTTPException(status_code=400, detail="Github OAuth failed")
+            raise HTTPException(status_code=400, detail="GitHub OAuth failed: Could not retrieve access token.")
 
-        # 사용자 정보 요청
+        # 2. Access Token으로 사용자 정보 요청
         user_response = await client.get(
             GITHUB_API_URL,
-            headers={"Authorization": f"token {access_token}"}
+            headers={"Authorization": f"token {access_token}"},
         )
         user_data = user_response.json()
+
+        # 여기서 기존의 사용자 정보 DB 저장/업데이트 로직을 수행할 수 있습니다.
+
 
     # 사용자 정보 데이터베이스에 저장
     db: Session = next(get_db())
