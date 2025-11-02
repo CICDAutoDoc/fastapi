@@ -1,14 +1,10 @@
-"""
-⑤ 문서 저장 노드
-
-생성/업데이트된 문서를 DB에 저장하는 노드
-"""
 from datetime import datetime
 from database import SessionLocal
 from models import Document
 
 from ..document_state import DocumentState
 
+#생성/업데이트된 문서를 DB에 저장하는 노드
 
 def document_saver_node(state: DocumentState) -> DocumentState:
     """

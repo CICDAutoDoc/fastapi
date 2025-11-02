@@ -1,10 +1,6 @@
-"""
-③ 문서 결정 노드
-
-기존 문서 업데이트 또는 신규 생성을 결정하는 노드
-"""
 from ..document_state import DocumentState
 
+#기존 문서 업데이트 또는 신규 생성을 결정하는 노드
 
 def document_decider_node(state: DocumentState) -> DocumentState:
     """

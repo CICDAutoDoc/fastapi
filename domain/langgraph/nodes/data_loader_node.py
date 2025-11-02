@@ -1,17 +1,14 @@
-"""
-① 데이터 로더 노드
-
-DB에서 CodeChange, FileChange, 기존 Document를 로드하는 노드
-"""
 from typing import TYPE_CHECKING
-
 from ..document_state import DocumentState
 from database import SessionLocal
 from models import CodeChange, FileChange, Document
 
+
+
 if TYPE_CHECKING:
     pass
 
+#DB에서 CodeChange, FileChange, 기존 Document를 로드하는 노드
 
 def data_loader_node(state: DocumentState) -> DocumentState:
     """

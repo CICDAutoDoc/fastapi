@@ -1,8 +1,3 @@
-"""
-LangGraph 워크플로우 메인 클래스
-
-각 노드는 nodes/ 디렉토리의 개별 파일로 관리됩니다.
-"""
 from typing import Dict, Any, Optional
 import os
 from functools import partial
@@ -19,7 +14,7 @@ from .nodes import (
     document_saver_node,
 )
 
-
+#LangGraph 워크플로우 메인 클래스
 class DocumentWorkflow:
     """
     문서 자동 생성/업데이트 워크플로우

@@ -1,5 +1,5 @@
 """
-# 📄 Document Management API
+# Document Management API
 
 LangGraph 기반 자동 문서 생성 시스템의 문서 관리 API입니다.
 
@@ -22,11 +22,6 @@ LangGraph 기반 자동 문서 생성 시스템의 문서 관리 API입니다.
 - `edited`: 사용자가 편집함
 - `reviewed`: 검토 완료
 - `failed`: 생성 실패
-
-## 사용 대상
-- 개발팀: 코드 변경에 따른 기술 문서 관리
-- 테크니컬 라이터: 자동 생성된 문서 편집 및 개선
-- 프로젝트 매니저: 문서 현황 모니터링
 """
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -159,6 +154,12 @@ async def update_document(
     }
     ```
     
+    ### status 필드 사용 가능한 값
+    - `generated`: LLM으로 자동 생성된 상태 (기본값)
+    - `edited`: 사용자가 편집한 상태
+    - `reviewed`: 검토 완료된 상태
+    - `failed`: 생성 실패한 상태
+    
     ### 주의사항
     - 최소 하나의 필드는 제공되어야 합니다
     - content 변경 시 자동으로 status가 'edited'로 변경됩니다
@@ -236,7 +237,7 @@ async def update_document(
 )
 async def list_documents(
     repository_name: Optional[str] = None,
-    status: Optional[str] = None,
+    status: Optional[str] = None,  # 사용 가능한 값: 'generated', 'edited', 'reviewed', 'failed'
     limit: int = 50,
     offset: int = 0,
     db: Session = Depends(get_db)
@@ -247,8 +248,12 @@ async def list_documents(
     조건에 맞는 문서들의 목록을 조회합니다.
     
     ### 필터링 옵션
-    - **repository_name**: 특정 저장소의 문서만 조회
-    - **status**: 특정 상태의 문서만 조회 ('generated', 'edited', 'failed' 등)
+    - **repository_name**: 특정 저장소의 문서만 조회 (예: "owner/repo")
+    - **status**: 특정 상태의 문서만 조회
+      - `generated`: LLM으로 자동 생성된 문서
+      - `edited`: 사용자가 편집한 문서
+      - `reviewed`: 검토 완료된 문서
+      - `failed`: 생성 실패한 문서
     
     ### 페이징 옵션
     - **limit**: 한 번에 가져올 문서 수 (기본값: 50, 최대: 100)
@@ -371,12 +376,7 @@ async def trigger_document_generation(
         if not openai_api_key:
             raise HTTPException(status_code=500, detail="OpenAI API key not configured")
         
-        # TODO: LangGraph 서비스 연동 필요
-        # try:
-        #     from ..langgraph.document_service import get_document_service
-        # except ImportError:
-        #     raise HTTPException(status_code=500, detail="Document service not available")
-        
+    
         # 임시로 문서 생성 시뮬레이션
         raise HTTPException(status_code=501, detail="Document generation service not implemented yet")
         doc_service = get_document_service(openai_api_key)
@@ -459,3 +459,39 @@ async def delete_document(document_id: int, db: Session = Depends(get_db)):
         db.rollback()
         logger.error(f"Error deleting document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/document/latest/{repo_owner}/{repo_name}",
+    response_model=DocumentResponse,
+    summary="저장소별 최신 문서 조회",
+    description="repo_owner와 repo_name에 대해 가장 최근에 수정된 문서 한 건을 반환합니다.",
+)
+async def get_latest_document(
+    repo_owner: str, repo_name: str, db: Session = Depends(get_db)
+):
+    try:
+        repository_full_name = f"{repo_owner}/{repo_name}"
+        document = (
+            db.query(Document)
+            .filter(Document.repository_name == repository_full_name)
+            .order_by(Document.updated_at.desc())
+            .first()
+        )
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found for repository")
+
+        logger.info(
+            f"Latest document retrieved for repo: {repository_full_name}",
+            extra={"repository_name": repository_full_name, "document_id": document.id},
+        )
+        return DocumentResponse.model_validate(document)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error retrieving latest document for repository {repository_full_name}: {e}",
+            extra={"repository_name": repository_full_name},
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+

@@ -1,13 +1,10 @@
-"""
-④ 문서 생성 노드
-
-LLM 또는 Mock을 사용하여 마크다운 문서를 생성/업데이트하는 노드
-"""
 from typing import Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from ..document_state import DocumentState
+
+#LLM 또는 Mock을 사용하여 마크다운 문서를 생성/업데이트하는 노드
 
 
 def document_generator_node(

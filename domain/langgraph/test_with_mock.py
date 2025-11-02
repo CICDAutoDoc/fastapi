@@ -1,8 +1,3 @@
-"""
-Mock 모드로 전체 워크플로우 테스트
-
-OpenAI API 결제 없이 테스트 가능
-"""
 import sys
 import os
 import asyncio
@@ -13,6 +8,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 from domain.langgraph.document_service import get_document_service
 from database import SessionLocal
 from models import CodeChange, FileChange, Document
+
+#Mock 모드로 전체 워크플로우 테스트
+#OpenAI API 결제 없이 테스트 가능
 
 
 def check_database():
