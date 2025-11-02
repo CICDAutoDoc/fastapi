@@ -1,8 +1,3 @@
-"""
-문서 자동 생성/업데이트 서비스
-
-webhook_handler에서 호출되는 고수준 인터페이스 제공
-"""
 from typing import Dict, Any, Optional
 import os
 from .document_workflow import DocumentWorkflow
