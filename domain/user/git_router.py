@@ -9,7 +9,8 @@ from domain.user.schemas import *
 from database import get_db
 from models import User
 from domain.user.webhook_handler import (
-    handle_push_event, handle_pull_request_event, save_webhook_info,
+    WebhookHandler,
+    save_webhook_info,
     delete_webhook_info, get_current_user, get_user_access_token
 )
 from app.config import (
@@ -300,13 +301,18 @@ async def delete_webhook(repo_owner: str, repo_name: str, webhook_id: int, user_
 
 
 def verify_webhook_signature(payload: bytes, signature: Optional[str]) -> bool:
-    # ... (기존과 동일)
+    # 기존 유틸은 더 이상 사용하지 않음. WebhookHandler에서 일관 처리.
     import hmac, hashlib
-    if signature is None: return False
-    sha_name, signature_hex = signature.split('=')
-    if sha_name != 'sha256': return False
-    mac = hmac.new(GITHUB_WEBHOOK_SECRET.encode(), msg=payload, digestmod=hashlib.sha256)
-    return hmac.compare_digest(mac.hexdigest(), signature_hex)
+    if signature is None:
+        return False
+    try:
+        sha_name, signature_hex = signature.split('=')
+        if sha_name != 'sha256':
+            return False
+        mac = hmac.new(GITHUB_WEBHOOK_SECRET.encode(), msg=payload, digestmod=hashlib.sha256)
+        return hmac.compare_digest(mac.hexdigest(), signature_hex)
+    except Exception:
+        return False
 
 
 @router.post(
@@ -323,20 +329,11 @@ async def github_webhook(
         x_hub_signature_256: Optional[str] = Header(None)
 ):
     """GitHub 웹훅 이벤트 수신 및 처리"""
-    payload = await request.body()
-    if not verify_webhook_signature(payload, x_hub_signature_256):
-        raise HTTPException(status_code=403, detail="Invalid signature")
-
-    data = await request.json()
-
-    if x_github_event == "push":
-        return await handle_push_event(data)
-    elif x_github_event == "pull_request":
-        return await handle_pull_request_event(data)
-
-    return WebhookEventResponse(
-        success=True,
-        message="Event received but not handled.",
-        event_type=x_github_event,
-        processed=False
+    # 중복 검증 및 응답 포맷 불일치를 방지하기 위해 전담 핸들러에 위임합니다.
+    handler = WebhookHandler()
+    return await handler.handle_webhook(
+        request=request,
+        x_github_event=x_github_event,
+        x_hub_signature_256=x_hub_signature_256,
+        x_github_delivery=x_github_delivery,
     )

@@ -496,7 +496,9 @@ async def _trigger_document_generation(code_change_id: int):
     """문서 생성을 비동기로 트리거"""
     try:
         from domain.langgraph.document_service import get_document_service
-        document_service = get_document_service(use_mock=False)  # 실제 LLM 사용
+        from app.config import LANGGRAPH_USE_MOCK
+        # 환경변수 LANGGRAPH_USE_MOCK 으로 mock 모드 전환 가능
+        document_service = get_document_service(use_mock=LANGGRAPH_USE_MOCK)
 
         log_document_generation(code_change_id, "starting")
         result = await document_service.process_code_change(code_change_id)

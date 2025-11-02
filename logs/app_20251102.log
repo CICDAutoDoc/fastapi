@@ -1,0 +1,103 @@
+2025-11-02 11:00:07 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 11:01:37 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 1
+2025-11-02 11:03:29 - CICDAutoDoc.document_router - INFO - document_router:278 - Documents listed: 0 items
+2025-11-02 11:06:12 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 1
+2025-11-02 11:06:22 - CICDAutoDoc.document_router - INFO - document_router:278 - Documents listed: 0 items
+2025-11-02 11:06:44 - CICDAutoDoc.document_router - INFO - document_router:455 - Document deleted: 1
+2025-11-02 11:07:59 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 11:07:59 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:613 - No access token found for repository chris-park5/testWebHook2
+2025-11-02 11:07:59 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 11:07:59 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for testapi.py: 750 characters
+2025-11-02 11:07:59 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 11:07:59 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 11:08:01 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 11:08:10 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 11:18:22 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 11:20:14 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 11:20:14 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 11:20:14 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:613 - No access token found for repository chris-park5/testWebHook2
+2025-11-02 11:20:14 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 11:20:14 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for testapi.py: 1619 characters
+2025-11-02 11:20:14 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 11:20:14 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 11:20:15 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 11:20:28 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 11:25:47 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 11:25:48 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 11:30:48 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 11:30:49 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 11:36:51 - CICDAutoDoc.document_router - INFO - document_router:194 - Document updated: 1
+2025-11-02 11:37:05 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 1
+2025-11-02 11:44:19 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 11:44:19 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 11:44:19 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:615 - No access token found for repository chris-park5/testWebHook2
+2025-11-02 11:44:20 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 11:44:20 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for testapi.py: 625 characters
+2025-11-02 11:44:20 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 11:44:20 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 11:44:22 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 11:44:22 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 12:10:00 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 12:10:21 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:10:21 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:10:21 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:615 - No access token found for repository chris-park5/testWebHook2
+2025-11-02 12:10:21 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 12:10:21 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for testapi.py: 1121 characters
+2025-11-02 12:10:21 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 12:10:21 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 12:10:22 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 12:10:36 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 12:11:13 - CICDAutoDoc.document_router - INFO - document_router:278 - Documents listed: 0 items
+2025-11-02 12:15:13 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 1
+2025-11-02 12:19:11 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:562 - Repository chris-park5/testWebHook created and linked to user chris-park5
+2025-11-02 12:19:11 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:580 - Webhook info saved successfully
+2025-11-02 12:19:12 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: ping
+2025-11-02 12:19:12 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:104 - Unsupported event type: ping
+2025-11-02 12:20:19 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:20:19 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:20:19 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:615 - No access token found for repository chris-park5/testWebhook
+2025-11-02 12:20:19 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 12:20:19 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for long.py: 5848 characters
+2025-11-02 12:20:19 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 12:20:19 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 12:20:19 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 12:20:32 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 12:24:56 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 12:27:06 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:562 - Repository chris-park5/testWebHook2 created and linked to user chris-park5
+2025-11-02 12:27:06 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:580 - Webhook info saved successfully
+2025-11-02 12:27:08 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 12:27:08 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: ping
+2025-11-02 12:27:08 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:104 - Unsupported event type: ping
+2025-11-02 12:28:01 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 1
+2025-11-02 12:28:42 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:28:42 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:28:42 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 12:28:42 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for hello.py: 4064 characters
+2025-11-02 12:28:42 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 12:28:42 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 12:28:43 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 12:28:54 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 12:49:41 - CICDAutoDoc.document_router - INFO - document_router:278 - Documents listed: 0 items
+2025-11-02 12:50:10 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 2
+2025-11-02 12:53:37 - CICDAutoDoc.document_router - INFO - document_router:194 - Document updated: 2
+2025-11-02 12:56:20 - CICDAutoDoc.document_router - INFO - document_router:194 - Document updated: 2
+2025-11-02 12:57:30 - CICDAutoDoc.document_router - INFO - document_router:194 - Document updated: 2
+2025-11-02 12:58:38 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:58:38 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 12:58:39 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 12:58:39 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for document_service.py: 2147 characters
+2025-11-02 12:58:39 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 12:58:39 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 12:58:39 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 12:58:55 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 13:04:08 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 13:04:08 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-11-02 13:04:09 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-11-02 13:04:09 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for webhook_handler.py: 25986 characters
+2025-11-02 13:04:09 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-11-02 13:04:09 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-11-02 13:04:09 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-11-02 13:04:21 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-11-02 13:21:28 - CICDAutoDoc.document_router - INFO - document_router:105 - Document retrieved: 2
+2025-11-02 13:32:01 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-11-02 13:39:36 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized

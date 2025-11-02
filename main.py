@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
 from domain.user import git_router
+from domain.document import document_router
 
 app = FastAPI()
 
@@ -27,5 +28,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+# 라우터 등록
 app.include_router(git_router.router)
+app.include_router(document_router.router)

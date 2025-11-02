@@ -1,1 +1,90 @@
 2025-10-31 01:16:48 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 14:52:30 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 14:53:54 - CICDAutoDoc.webhook - INFO - logging_config:122 - Webhook received: push
+2025-10-31 14:53:54 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:613 - No access token found for repository chris-park5/testWebhook
+2025-10-31 14:53:54 - CICDAutoDoc.github_api - INFO - logging_config:142 - GitHub API call: 200
+2025-10-31 14:53:54 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:249 - Found patch for push.py: 83 characters
+2025-10-31 14:53:54 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:170 - Processing code changes
+2025-10-31 14:53:54 - CICDAutoDoc.webhook_handler - INFO - webhook_handler:476 - Triggering document generation for 1 code changes
+2025-10-31 14:53:56 - CICDAutoDoc.document_service - INFO - document_service:26 - DocumentService initialized with real DocumentGenerator
+2025-10-31 14:53:56 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation starting
+2025-10-31 14:53:56 - CICDAutoDoc.document_service - INFO - document_service:40 - Processing code change: 1
+2025-10-31 14:53:56 - CICDAutoDoc.document_service - INFO - document_service:68 - Creating first repository document for: unknown
+2025-10-31 14:53:56 - CICDAutoDoc.document_service - INFO - document_service:89 - Found 1 file changes for code change 1
+2025-10-31 14:53:56 - CICDAutoDoc.document_service - INFO - document_service:121 - Created pending document with ID: 1
+2025-10-31 14:54:06 - CICDAutoDoc.document_service - INFO - document_service:145 - Successfully generated document 1: unknown - 문서 생성 실패
+2025-10-31 14:54:06 - CICDAutoDoc.document - INFO - logging_config:132 - Document generation success
+2025-10-31 14:57:44 - CICDAutoDoc.webhook_handler - WARNING - webhook_handler:666 - Webhook not found in database
+2025-10-31 15:32:58 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:32:59 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:33:07 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:33:18 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:34:40 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:43:18 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:43:20 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:48:20 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:48:22 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:48:54 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:48:56 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:53:57 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 15:53:59 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 16:03:59 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 16:04:01 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 20:56:38 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:00:05 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:00:23 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:00:25 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:01:02 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:01:04 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:01:36 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:01:38 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:02:07 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:02:10 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:02:41 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:02:43 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:03:27 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:03:29 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:03:30 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:04:02 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:04:04 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:04:35 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:04:37 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:08:30 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:08:32 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:09:04 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:09:06 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:09:23 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:09:54 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:09:56 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:11:40 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:11:44 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:12:15 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:16:06 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:16:08 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:34:54 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:34:57 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:34:59 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:35:02 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:35:34 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:35:35 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:36:05 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:36:25 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:36:57 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:37:00 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:37:32 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:38:05 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:38:37 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:43:37 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:43:39 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:45:21 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:45:22 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:45:29 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:45:59 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:46:26 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:46:45 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:48:42 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 21:48:43 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 22:56:28 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 23:00:34 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 23:00:36 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
+2025-10-31 23:01:30 - CICDAutoDoc - INFO - logging_config:86 - Logging system initialized
