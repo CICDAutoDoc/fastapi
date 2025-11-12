@@ -117,6 +117,66 @@ async def callback(code: str):
         db.close()
 
 
+# --- User Information ---
+
+@router.get(
+    "/me",
+    tags=["User Information"],
+    summary="현재 사용자 정보 조회",
+    description="GitHub 토큰을 사용하여 현재 로그인된 사용자의 정보를 조회합니다. 클라이언트가 user_id를 알 수 있는 방법을 제공합니다."
+)
+async def get_current_user_info(authorization: str = Header(...)):
+    """GitHub 토큰으로 현재 사용자 정보 조회"""
+    try:
+        # Bearer 토큰에서 실제 토큰 추출
+        token = authorization.replace("Bearer ", "").strip()
+        
+        async with httpx.AsyncClient() as client:
+            # GitHub API로 사용자 정보 조회
+            response = await client.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"token {token}"}
+            )
+            
+            if response.status_code == 200:
+                github_user = response.json()
+                
+                # DB에서 해당 GitHub 사용자의 내부 user_id 조회
+                db: Session = next(get_db())
+                try:
+                    user = db.query(User).filter_by(github_id=github_user["id"]).first()
+                    
+                    if user:
+                        return JSONResponse(status_code=200, content={
+                            "success": True,
+                            "user": {
+                                "user_id": user.id,
+                                "github_id": user.github_id,
+                                "username": user.username,
+                                "email": user.email,
+                                "avatar_url": github_user.get("avatar_url"),
+                                "name": github_user.get("name")
+                            }
+                        })
+                    else:
+                        return JSONResponse(status_code=404, content={
+                            "success": False,
+                            "error": "User not found in database. Please login first."
+                        })
+                finally:
+                    db.close()
+            else:
+                return JSONResponse(status_code=401, content={
+                    "success": False,
+                    "error": "Invalid GitHub token"
+                })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={
+            "success": False,
+            "error": f"Failed to get user info: {str(e)}"
+        })
+
+
 # --- Repositories ---
 
 @router.get(

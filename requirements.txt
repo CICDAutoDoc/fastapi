@@ -1,0 +1,30 @@
+# FastAPI 관련
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# 데이터베이스 관련
+sqlalchemy==2.0.23
+alembic==1.12.1
+
+# HTTP 클라이언트
+httpx==0.25.2
+
+# 환경변수 관리
+python-dotenv==1.0.0
+
+# LangChain/LangGraph 관련
+langchain-core==0.1.52
+langchain-openai==0.1.8
+langgraph==0.0.69
+
+# 로깅 및 유틸리티
+pydantic==2.5.0
+python-dateutil==2.8.2
+typing-extensions==4.8.0
+
+# 개발/테스트 도구 (선택적)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0
