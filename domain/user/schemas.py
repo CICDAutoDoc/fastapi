@@ -71,3 +71,20 @@ class WebhookEventResponse(BaseModel):
     repository: Optional[str] = None
     processed: bool = False
     error: Optional[str] = None
+
+
+class UserInfo(BaseModel):
+    """사용자 상세 정보"""
+    user_id: int
+    github_id: int
+    username: str
+    email: Optional[str] = None
+    avatar_url: Optional[str] = None
+    name: Optional[str] = None
+
+
+class UserInfoResponse(BaseModel):
+    """사용자 정보 조회 응답"""
+    success: bool
+    user: Optional[UserInfo] = None
+    error: Optional[str] = None

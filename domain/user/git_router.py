@@ -117,6 +117,61 @@ async def callback(code: str):
         db.close()
 
 
+# --- User Information ---
+
+@router.get(
+    "/me",
+    tags=["User Information"],
+    summary="현재 사용자 정보 조회",
+    description="GitHub 토큰을 사용하여 현재 로그인된 사용자의 정보를 조회합니다.",
+    response_model=UserInfoResponse  # 응답 모델 지정
+)
+async def get_current_user_info(authorization: str = Header(...)):
+    """GitHub 토큰으로 현재 사용자 정보 조회"""
+    db: Session = next(get_db())
+    try:
+        # Bearer 토큰에서 실제 토큰 추출
+        token = authorization.replace("Bearer ", "").strip()
+
+        async with httpx.AsyncClient() as client:
+            # GitHub API로 사용자 정보 조회
+            response = await client.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"token {token}"}
+            )
+
+            if response.status_code != 200:
+                return UserInfoResponse(success=False, error="Invalid GitHub token")
+
+            github_user = response.json()
+
+            # DB에서 해당 GitHub 사용자의 내부 user_id 조회
+            user = db.query(User).filter_by(github_id=github_user["id"]).first()
+
+            if user:
+                # 성공 응답 모델 생성
+                user_data = UserInfo(
+                    user_id=user.id,
+                    github_id=user.github_id,
+                    username=user.username,
+                    email=user.email,
+                    avatar_url=github_user.get("avatar_url"),
+                    name=github_user.get("name")
+                )
+                return UserInfoResponse(success=True, user=user_data)
+            else:
+                # 사용자를 찾지 못한 경우 오류 응답
+                return UserInfoResponse(
+                    success=False,
+                    error="User not found in database. Please login first."
+                )
+    except Exception as e:
+        # 서버 내부 오류 발생 시 응답
+        return UserInfoResponse(success=False, error=f"Failed to get user info: {str(e)}")
+    finally:
+        db.close()
+
+
 # --- Repositories ---
 
 @router.get(
