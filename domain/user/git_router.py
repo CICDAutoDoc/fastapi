@@ -123,7 +123,7 @@ async def callback(code: str):
     "/me",
     tags=["User Information"],
     summary="현재 사용자 정보 조회",
-    description="GitHub 토큰을 사용하여 현재 로그인된 사용자의 정보를 조회합니다. 클라이언트가 user_id를 알 수 있는 방법을 제공합니다."
+    description="GitHub 토큰을 사용하여 현재 로그인된 사용자의 정보를 조회합니다."
 )
 async def get_current_user_info(authorization: str = Header(...)):
     """GitHub 토큰으로 현재 사용자 정보 조회"""
