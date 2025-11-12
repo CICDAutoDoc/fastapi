@@ -172,6 +172,7 @@ async def get_current_user_info(authorization: str = Header(...)):
         db.close()
 
 
+
 # --- Repositories ---
 
 @router.get(
