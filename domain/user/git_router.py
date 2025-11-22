@@ -172,7 +172,6 @@ async def get_current_user_info(authorization: str = Header(...)):
         db.close()
 
 
-
 # --- Repositories ---
 
 @router.get(
@@ -185,9 +184,18 @@ async def get_current_user_info(authorization: str = Header(...)):
 async def get_user_repositories(user_id: int):
     """사용자의 GitHub 저장소 목록 조회"""
     try:
-        user = await get_current_user(user_id)
-        access_token = await get_user_access_token(user)
+        # 1. DB에서 user_id로 사용자 조회
+        db: Session = next(get_db())
+        user = db.query(User).filter_by(id=user_id).first()  # id는 DB 내부 PK
 
+        if not user:
+            db.close()
+            return RepositoriesResponse(success=False, error="User not found")
+        access_token = user.access_token  # DB에서 저장한 Token 사용
+
+        db.close()
+
+        # 2. GitHub API에서 저장소 정보 조회
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 "https://api.github.com/user/repos",
@@ -204,6 +212,7 @@ async def get_user_repositories(user_id: int):
                     RepositoryInfo(
                         name=repo["name"],
                         full_name=repo["full_name"],
+                        owner=repo["owner"]["login"],  # RepositoryInfo에 owner 필드가 문자열이어야 함
                         private=repo["private"],
                         default_branch=repo["default_branch"],
                         permissions=repo["permissions"]
@@ -217,9 +226,10 @@ async def get_user_repositories(user_id: int):
                 )
             else:
                 return RepositoriesResponse(success=False,
-                                                    error=f"Failed to fetch repositories: {response.status_code}")
+                                            error=f"Failed to fetch repositories: {response.status_code}")
     except Exception as e:
         return RepositoriesResponse(success=False, error=str(e))
+
 
 
 # --- Webhooks ---
@@ -266,18 +276,19 @@ async def list_webhooks(repo_owner: str, repo_name: str, user_id: int):
     tags=["Webhooks"],
     response_model=WebhookResponse,
     summary="저장소 등록 및 웹훅 설정",
-    description="''owner/repo' 형식의 저장소 전체 이름과 웹훅 URL을 받아 저장소를 등록하고, 'push' 및 'pull_request' 이벤트를 구독하는 웹훅을 자동으로 설정합니다."
+    description="'owner/repo' 형식의 저장소 전체 이름과 웹훅 URL을 받아 저장소를 등록하고, 'push' 및 'pull_request' 이벤트를 구독하는 웹훅을 자동으로 설정합니다."
 )
 async def setup_repository_with_webhook(request: SetupWebhookRequest, user_id: int):
-    """저장소 등록 및 웹훅 설정"""
     try:
+        # 1. user_id로 DB에서 사용자 조회
         user = await get_current_user(user_id)
         access_token = await get_user_access_token(user)
+
         repo_owner, repo_name = request.repo_owner, request.repo_name
         repo_full_name = f"{repo_owner}/{repo_name}"
 
         async with httpx.AsyncClient() as client:
-            # 웹훅 설정
+            # 2. 웹훅 설정 정보 구성
             webhook_config = {
                 "name": "web",
                 "active": True,
@@ -289,6 +300,7 @@ async def setup_repository_with_webhook(request: SetupWebhookRequest, user_id: i
                 }
             }
 
+            # 3. GitHub API에 웹훅 등록 요청
             webhook_response = await client.post(
                 f"https://api.github.com/repos/{repo_full_name}/hooks",
                 headers={
@@ -298,6 +310,7 @@ async def setup_repository_with_webhook(request: SetupWebhookRequest, user_id: i
                 json=webhook_config
             )
 
+            # 4. 성공 실패 분기 처리
             if webhook_response.status_code not in [200, 201]:
                 details = webhook_response.json()
                 error_msg = details.get("message", "Failed to create webhook")
@@ -307,7 +320,7 @@ async def setup_repository_with_webhook(request: SetupWebhookRequest, user_id: i
 
             webhook_data = webhook_response.json()
 
-            # DB에 웹훅 정보 저장
+            # 5. DB에 웹훅 정보 저장
             await save_webhook_info({
                 "repo_owner": repo_owner,
                 "repo_name": repo_name,
@@ -316,15 +329,22 @@ async def setup_repository_with_webhook(request: SetupWebhookRequest, user_id: i
                 "access_token": access_token
             })
 
+            # 6. 성공 응답 반환
             return WebhookResponse(
                 success=True,
                 message="Webhook setup completed successfully.",
                 webhook_id=webhook_data["id"],
                 webhook_url=webhook_data["config"]["url"]
             )
+
     except Exception as e:
-        return WebhookResponse(success=False, message="An unexpected error occurred during webhook setup.",
-                                       error=str(e))
+        # 예외 발생 시 에러 메시지 포맷으로 반환
+        return WebhookResponse(
+            success=False,
+            message="An unexpected error occurred during webhook setup.",
+            error=str(e)
+        )
+
 
 
 @router.delete(
