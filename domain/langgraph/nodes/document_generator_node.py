@@ -74,9 +74,8 @@ Mock 모드로 생성된 문서입니다.
             raise ValueError("LLM is required for non-mock mode")
         
         if should_update:
-            # 기존 문서 업데이트
+            # 기존 문서 업데이트만 수행 (신규 문서 생성은 full_repository_document_generator에서 처리)
             existing_content = state.get("existing_document", {}).get("content", "")
-            
             system_prompt = """당신은 기술 문서 편집 전문가입니다.
 기존 문서에 새로운 변경사항을 추가하여 업데이트하세요.
 
@@ -86,7 +85,6 @@ Mock 모드로 생성된 문서입니다.
 3. 중복된 내용은 통합하세요
 4. 마크다운 형식을 유지하세요
 5. 변경사항만 간결하게 추가하세요"""
-
             user_prompt = f"""기존 문서:
 ```markdown
 {existing_content}
@@ -96,51 +94,11 @@ Mock 모드로 생성된 문서입니다.
 {analysis_result}
 
 기존 문서에 새로운 변경사항을 추가하여 업데이트된 문서를 작성하세요."""
-
         else:
-            # 신규 문서 생성
-            system_prompt = """당신은 기술 문서 작성 전문가입니다.
-코드 변경사항 분석 결과를 바탕으로 기술 문서를 작성하세요.
-
-**문서 구조**:
-# 제목
-
-## 개요
-- 변경 일시
-- 커밋 정보
-- 변경된 파일 목록
-
-## 주요 변경사항
-- 새로 추가된 기능
-- 수정된 기능
-- 삭제된 기능
-
-## 기술적 세부사항
-- 구현 방법
-- 사용된 기술/라이브러리
-- 코드 구조 변경
-
-## 영향도
-- 기존 시스템에 미치는 영향
-- 주의사항
-
-마크다운 형식으로 작성하고, 코드 변경사항과 관련된 내용만 포함하세요."""
-
-            commit_info = state.get("code_change", {})
-            changed_files = state.get("changed_files", [])
-            
-            user_prompt = f"""변경사항 분석:
-{analysis_result}
-
-커밋 정보:
-- SHA: {commit_info.get('commit_sha', '')}
-- 메시지: {commit_info.get('commit_message', '')}
-- 작성자: {commit_info.get('author', '')}
-- 시간: {commit_info.get('timestamp', '')}
-
-변경된 파일: {', '.join(changed_files)}
-
-위 정보를 바탕으로 기술 문서를 작성하세요."""
+            # 신규 문서 생성 책임 제거: 상태만 표시하고 작업 건너뜀
+            state["status"] = "skip"
+            state["error"] = "신규 문서 생성은 full_repository_document_generator에서 처리됩니다."
+            return state
         
         messages = [
             SystemMessage(content=system_prompt),
@@ -149,7 +107,17 @@ Mock 모드로 생성된 문서입니다.
         
         response = llm.invoke(messages)
         
-        state["document_content"] = response.content
+        content_value = response.content
+        if not isinstance(content_value, str):
+            # LangChain 메시지 content가 list 형태일 수 있으므로 문자열로 변환
+            try:
+                content_value = "\n".join([
+                    c.get("text", "") if isinstance(c, dict) else str(c)
+                    for c in content_value
+                ])
+            except Exception:
+                content_value = str(content_value)
+        state["document_content"] = content_value
         
         # 요약 생성
         summary_prompt = f"""다음 문서를 3-5줄로 요약하세요:
@@ -159,7 +127,16 @@ Mock 모드로 생성된 문서입니다.
 요약:"""
         
         summary_response = llm.invoke([HumanMessage(content=summary_prompt)])
-        state["document_summary"] = summary_response.content
+        summary_value = summary_response.content
+        if not isinstance(summary_value, str):
+            try:
+                summary_value = " ".join([
+                    c.get("text", "") if isinstance(c, dict) else str(c)
+                    for c in summary_value
+                ])
+            except Exception:
+                summary_value = str(summary_value)
+        state["document_summary"] = summary_value
         
         state["status"] = "saving"
         return state

@@ -12,6 +12,10 @@ from .nodes import (
     document_decider_node,
     document_generator_node,
     document_saver_node,
+    repository_analyzer_node,
+    file_parser_node,
+    file_summarizer_node,
+    full_repository_document_generator_node,
 )
 
 #LangGraph 워크플로우 메인 클래스
@@ -41,9 +45,15 @@ class DocumentWorkflow:
             if not self.api_key:
                 raise ValueError("OPENAI_API_KEY is required (or use use_mock=True)")
             
+            # 문서/변경 분석용 모델: 환경변수 DOC_GENERATOR_MODEL 사용(기본 gpt-4o)
+            generator_model = os.getenv("DOC_GENERATOR_MODEL", "gpt-4o")
+            # ChatOpenAI: 기존 코드 스타일(api_key) 유지, 모델 환경변수화
+            # ChatOpenAI SecretStr 요구를 우회: 래퍼 함수 제공
+            def _key_provider() -> str:
+                return self.api_key or ""  # None 방지
             self.llm = ChatOpenAI(
-                api_key=self.api_key,
-                model="gpt-3.5-turbo",
+                api_key=_key_provider,
+                model=generator_model,
                 temperature=0.1
             )
         else:
@@ -52,14 +62,14 @@ class DocumentWorkflow:
         # 워크플로우 빌드
         self.workflow = self._build_workflow()
     
-    def _build_workflow(self) -> StateGraph:
+    def _build_workflow(self):
         """LangGraph 워크플로우 구성"""
         workflow = StateGraph(DocumentState)
         
         # 노드 추가 (각 노드는 독립적인 파일에서 가져옴)
         workflow.add_node("data_loader", data_loader_node)
         
-        # partial을 사용하여 llm과 use_mock을 바인딩
+
         workflow.add_node(
             "change_analyzer",
             partial(change_analyzer_node, llm=self.llm, use_mock=self.use_mock)
@@ -67,19 +77,69 @@ class DocumentWorkflow:
         
         workflow.add_node("document_decider", document_decider_node)
         
+        #저장소 분석 노드 추가
+        workflow.add_node(
+            "repository_analyzer",
+            partial(repository_analyzer_node, use_mock=self.use_mock)
+        )
+        
+        # 파일 파싱 노드 추가
+        workflow.add_node(
+            "file_parser",
+            partial(file_parser_node, use_mock=self.use_mock)
+        )
+        
+        # 파일 요약 노드 추가
+        workflow.add_node(
+            "file_summarizer",
+            partial(file_summarizer_node, use_mock=self.use_mock, openai_api_key=self.api_key)
+        )
+        
+        # 전체 저장소 분석 시에는 새로운 문서 생성기 사용
         workflow.add_node(
             "document_generator",
             partial(document_generator_node, llm=self.llm, use_mock=self.use_mock)
         )
         
+        # 전체 저장소 문서 생성 노드 추가
+        workflow.add_node(
+            "full_repository_document_generator",
+            partial(full_repository_document_generator_node, use_mock=self.use_mock, openai_api_key=self.api_key)
+        )
+        
         workflow.add_node("document_saver", document_saver_node)
+        
+        # 조건부 라우팅 함수
+        def should_analyze_full_repository(state: DocumentState) -> str:
+            """전체 저장소 분석이 필요한지 결정"""
+            if state.get("needs_full_analysis", False):
+                return "repository_analyzer"
+            else:
+                return "document_generator"
         
         # 워크플로우 연결
         workflow.set_entry_point("data_loader")
         workflow.add_edge("data_loader", "change_analyzer")
         workflow.add_edge("change_analyzer", "document_decider")
-        workflow.add_edge("document_decider", "document_generator")
+        
+        # 조건부 분기: 전체 저장소 분석 또는 직접 문서 생성
+        workflow.add_conditional_edges(
+            "document_decider",
+            should_analyze_full_repository,
+            {
+                "repository_analyzer": "repository_analyzer",
+                "document_generator": "document_generator"
+            }
+        )
+        
+        # 저장소 분석 → 파일 파싱 → 파일 요약 → 전체 문서 생성
+        workflow.add_edge("repository_analyzer", "file_parser")
+        workflow.add_edge("file_parser", "file_summarizer")
+        workflow.add_edge("file_summarizer", "full_repository_document_generator")
+        
+        # 일반 문서 생성과 전체 문서 생성 모두 문서 저장으로 연결
         workflow.add_edge("document_generator", "document_saver")
+        workflow.add_edge("full_repository_document_generator", "document_saver")
         workflow.add_edge("document_saver", END)
         
         return workflow.compile()

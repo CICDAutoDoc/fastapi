@@ -4,6 +4,31 @@ from database import SessionLocal
 from models import CodeChange, FileChange, Document
 
 
+def _get_repository_access_token_sync(full_name: str) -> str:
+    """저장소의 액세스 토큰 가져오기 (동기 버전)"""
+    from models import WebhookRegistration
+    
+    session = SessionLocal()
+    try:
+        # 저장소의 웹훅 등록 정보에서 토큰 가져오기
+        repo_owner, repo_name = full_name.split("/") if "/" in full_name else (full_name, "")
+        webhook_reg = session.query(WebhookRegistration).filter(
+            WebhookRegistration.repo_owner == repo_owner,
+            WebhookRegistration.repo_name == repo_name,
+            WebhookRegistration.is_active == True
+        ).first()
+
+        if webhook_reg is not None and webhook_reg.access_token is not None:
+            return str(webhook_reg.access_token)
+        else:
+            print(f"No access token found for repository {full_name}")
+            return ""
+    except Exception as e:
+        print(f"Failed to get access token for {full_name}: {e}")
+        return ""
+    finally:
+        session.close()
+
 
 if TYPE_CHECKING:
     pass
@@ -34,7 +59,11 @@ def data_loader_node(state: DocumentState) -> DocumentState:
         - status: "analyzing"
     """
     try:
-        code_change_id = state["code_change_id"]
+        code_change_id = state.get("code_change_id")
+        if not code_change_id:
+            state["error"] = "code_change_id is required"
+            state["status"] = "error"
+            return state
         session = SessionLocal()
         
         try:
@@ -77,14 +106,18 @@ def data_loader_node(state: DocumentState) -> DocumentState:
             
             diff_content = "\n".join(diff_parts)
             
+            # Access token 추출 (저장소 분석에 필요)
+            access_token = _get_repository_access_token_sync(repository_name)
+            
             # State 업데이트
             state["code_change"] = {
                 "id": code_change.id,
                 "commit_sha": code_change.commit_sha,
                 "commit_message": code_change.commit_message,
                 "author": code_change.author_name,
-                "timestamp": code_change.timestamp.isoformat() if code_change.timestamp else None,
+                "timestamp": code_change.timestamp.isoformat() if code_change.timestamp is not None else None,
             }
+            state["access_token"] = access_token
             state["file_changes"] = [
                 {
                     "filename": fc.filename,
