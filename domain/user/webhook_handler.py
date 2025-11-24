@@ -508,8 +508,11 @@ async def _trigger_document_generation(code_change_id: int):
                                     title=result.get('title', 'Unknown'),
                                     action=result.get('action', 'unknown'))
         else:
-            log_document_generation(code_change_id, "failed",
-                                    error=result.get('error', 'Unknown error'))
+            # ▼▼▼ 이 두 줄을 추가해 주세요! ▼▼▼
+            error_msg = result.get('error', 'Unknown error')
+            print(f"\n[DEBUG] 문서 생성 실패 원인: {error_msg}\n")
+
+            log_document_generation(code_change_id, "failed", error=error_msg)
 
     except Exception as e:
         log_error(f"Error triggering document generation for CodeChange {code_change_id}", e,

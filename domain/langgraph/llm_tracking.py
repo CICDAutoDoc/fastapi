@@ -9,7 +9,7 @@ try:
 except ImportError:  # 호환성 처리
     from langchain_community.callbacks import get_openai_callback  # type: ignore
 
-from fastapi.app.logging_config import get_logger  # 로깅 재사용
+from app.logging_config import get_logger  # 로깅 재사용
 
 _usage_logger = get_logger("llm")
 
