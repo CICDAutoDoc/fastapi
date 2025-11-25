@@ -90,7 +90,7 @@ def _overview_task(repo_name: str, data_json: str, version: str) -> str:
         "- 목적(pu) 정보를 종합하여 주요 기능 도출\n"
         "- FastAPI, Django, Spring 등 프레임워크는 파일명/경로에서 식별\n"
         "- 데이터베이스, 캐시, 메시징 등은 일반적 패턴으로 추론\n"
-        "- '기술 스택'은 계층별 구성 (Frontend/Backend/Database/Infrastructure)\n"
+        "- '기술 스택'은 계층별 구성 (Frontend/Backend/Database)\n"
         "- '강점/특징'은 아키텍처 특성과 기술 선택의 장점 위주\n"
         f"데이터:{data_json}\n"
         + ("섹션 종료 후 {\"section\":\"overview\",\"version\":\"" + version + "\"}" if version == "v4" else "")

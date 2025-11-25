@@ -11,7 +11,6 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..document_state import DocumentState
-from ..llm_tracking import track_llm_usage
 
 
 # ============================================================
@@ -200,8 +199,7 @@ def _generate_file_summary_with_llm(
             HumanMessage(content=user_prompt)
         ]
 
-        with track_llm_usage("file_summary", llm_model=getattr(llm, 'model_name', 'unknown')):
-            response = llm.invoke(messages)
+        response = llm.invoke(messages)
         text = _extract_text(response.content)
 
         json_block = _extract_json(text)
