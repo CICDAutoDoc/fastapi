@@ -19,7 +19,7 @@ from ..document_state import DocumentState
 
 class FileSummarizerConfig:
     """Summarizer 관련 환경 설정"""
-    DEFAULT_MODEL = os.getenv("DOC_SUMMARIZER_MODEL", "gpt-4.1")
+    DEFAULT_MODEL = os.getenv("DOC_SUMMARIZER_MODEL", "gpt-5")
     SUMMARY_LIMIT = int(os.getenv("FILE_SUMMARY_LIMIT", "30"))
 
     @staticmethod

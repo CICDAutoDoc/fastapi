@@ -20,7 +20,7 @@ class FullRepoDocumentLLM:
 
     def __init__(self, api_key: str, prompt_version: str):
         self._init_env(api_key)
-        self.llm = ChatOpenAI(model="gpt-4o", temperature=0.2)
+        self.llm = ChatOpenAI(model="gpt-5", temperature=0.2)
         # 프롬프트 세트 로딩
         from .prompts import get_prompt_set
         self.prompt_version = prompt_version
@@ -207,36 +207,56 @@ def full_repository_document_generator_node(
     repo_struct: Dict[str, Any] = state.get("repository_structure") or {}
     repo_name: str = state.get("repository_name") or "Unknown Project"
 
+    print(f"[FullRepoDocGen] Starting document generation for: {repo_name}")
+    print(f"[FullRepoDocGen] use_mock={use_mock}, has_api_key={bool(openai_api_key)}")
+    print(f"[FullRepoDocGen] file_summaries count: {len(file_summaries)}")
+
     if not file_summaries:
         state["status"] = "error"
         state["error"] = "file_summaries is empty"
+        print("[FullRepoDocGen] ERROR: file_summaries is empty")
         return state
 
     # ───────────────────────────────────────────────
     # MOCK MODE
     # ───────────────────────────────────────────────
     if use_mock or not openai_api_key:
-        builder = FullRepoMockBuilder(file_summaries, repo_struct, repo_name)
-        mock_doc = builder.build()
+        print("[FullRepoDocGen] Using MOCK mode")
+        try:
+            builder = FullRepoMockBuilder(file_summaries, repo_struct, repo_name)
+            mock_doc = builder.build()
 
-        state["document_title"] = mock_doc["title"]
-        state["document_content"] = mock_doc["content"]
-        state["document_summary"] = mock_doc["summary"]
-        state["status"] = "saving_document"
-        return state
+            state["document_title"] = mock_doc["title"]
+            state["document_content"] = mock_doc["content"]
+            state["document_summary"] = mock_doc["summary"]
+            state["status"] = "saving_document"
+            print("[FullRepoDocGen] MOCK document generated successfully")
+            return state
+        except Exception as e:
+            print(f"[FullRepoDocGen] MOCK generation failed: {e}")
+            state["status"] = "error"
+            state["error"] = f"Mock document generation failed: {e}"
+            return state
 
     # ───────────────────────────────────────────────
     # REAL LLM MODE
     # ───────────────────────────────────────────────
+    print("[FullRepoDocGen] Using REAL LLM mode")
     # 프롬프트 버전: 파라미터 > 환경변수 > 기본값
     import os
     effective_version = prompt_version or os.getenv("DOCUMENT_PROMPT_VERSION") or "v4"
-    llm = FullRepoDocumentLLM(openai_api_key, effective_version)
-    doc_builder = FullRepoDocumentBuilder(repo_name)
-
+    print(f"[FullRepoDocGen] Prompt version: {effective_version}")
+    
     try:
+        print("[FullRepoDocGen] Initializing LLM...")
+        llm = FullRepoDocumentLLM(openai_api_key, effective_version)
+        doc_builder = FullRepoDocumentBuilder(repo_name)
+
+        print("[FullRepoDocGen] Generating overview...")
         overview = llm.generate_overview(file_summaries, repo_struct, repo_name)
+        print("[FullRepoDocGen] Generating architecture...")
         architecture = llm.generate_architecture(file_summaries, repo_struct, repo_name)
+        print("[FullRepoDocGen] Generating key modules...")
         modules = llm.generate_key_modules(file_summaries, repo_struct, repo_name)
 
         doc_builder.add("overview", overview)
@@ -250,9 +270,13 @@ def full_repository_document_generator_node(
         # 프롬프트 버전 메타정보를 summary 끝에 포함
         state["document_summary"] = result["summary"] + f" (prompt_version={effective_version})"
         state["status"] = "saving_document"
+        print("[FullRepoDocGen] LLM document generated successfully")
         return state
 
     except Exception as e:
+        print(f"[FullRepoDocGen] LLM generation failed: {e}")
+        import traceback
+        traceback.print_exc()
         state["status"] = "error"
         state["error"] = f"Full document generation failed: {e}"
         return state
