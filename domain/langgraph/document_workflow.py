@@ -46,7 +46,7 @@ class DocumentWorkflow:
                 raise ValueError("OPENAI_API_KEY is required (or use use_mock=True)")
             
             # 문서/변경 분석용 모델: 환경변수 DOC_GENERATOR_MODEL 사용(기본 gpt-4o)
-            generator_model = os.getenv("DOC_GENERATOR_MODEL", "gpt-4o")
+            generator_model = os.getenv("DOC_GENERATOR_MODEL", "gpt-5")
             # ChatOpenAI: 기존 코드 스타일(api_key) 유지, 모델 환경변수화
             # ChatOpenAI SecretStr 요구를 우회: 래퍼 함수 제공
             def _key_provider() -> str:

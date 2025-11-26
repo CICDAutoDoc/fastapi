@@ -11,7 +11,6 @@ from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from ..document_state import DocumentState
-from ..llm_tracking import track_llm_usage
 
 
 # ============================================================
@@ -20,7 +19,7 @@ from ..llm_tracking import track_llm_usage
 
 class FileSummarizerConfig:
     """Summarizer 관련 환경 설정"""
-    DEFAULT_MODEL = os.getenv("DOC_SUMMARIZER_MODEL", "gpt-4.1")
+    DEFAULT_MODEL = os.getenv("DOC_SUMMARIZER_MODEL", "gpt-5")
     SUMMARY_LIMIT = int(os.getenv("FILE_SUMMARY_LIMIT", "30"))
 
     @staticmethod
@@ -200,8 +199,7 @@ def _generate_file_summary_with_llm(
             HumanMessage(content=user_prompt)
         ]
 
-        with track_llm_usage("file_summary", llm_model=getattr(llm, 'model_name', 'unknown')):
-            response = llm.invoke(messages)
+        response = llm.invoke(messages)
         text = _extract_text(response.content)
 
         json_block = _extract_json(text)

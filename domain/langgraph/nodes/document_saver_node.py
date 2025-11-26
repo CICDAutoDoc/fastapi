@@ -40,11 +40,25 @@ def document_saver_node(state: DocumentState) -> DocumentState:
             * document_type = "auto"
     """
     try:
+        # 문서 본문이 없다면 저장을 진행할 수 없으므로 바로 실패 처리
+        document_content = state.get("document_content")
+        document_summary = state.get("document_summary")
+        if not document_content:
+            state["status"] = "error"
+            state["error"] = "Document content missing before save"
+            return state
+        if document_summary is None:
+            state["status"] = "error"
+            state["error"] = "Document summary missing before save"
+            return state
+
         session = SessionLocal()
         
         try:
             should_update = state.get("should_update", False)
-            code_change_id = state["code_change_id"]
+            code_change_id = state.get("code_change_id")
+            if code_change_id is None:
+                raise ValueError("code_change_id missing before save")
             code_change = state.get("code_change", {})
             commit_sha = code_change.get("commit_sha", "") if code_change else ""
             
@@ -62,20 +76,24 @@ def document_saver_node(state: DocumentState) -> DocumentState:
                     raise ValueError(f"Document not found: {doc_id}")
                 
                 # 문서 업데이트
-                document.content = state["document_content"]
-                document.summary = state["document_summary"]
-                document.status = "generated"
-                document.updated_at = datetime.utcnow()
+                setattr(document, "content", document_content)
+                setattr(document, "summary", document_summary)
+                setattr(document, "status", "generated")
+                setattr(document, "updated_at", datetime.utcnow())
                 
-                state["document_id"] = document.id
+                state["document_id"] = int(getattr(document, "id"))
                 state["action"] = "updated"
                     
             else:
                 # 신규 문서 생성
+                document_title = state.get("document_title")
+                if not document_title:
+                    raise ValueError("Document title missing before save")
+
                 document = Document(
-                    title=state["document_title"],
-                    content=state["document_content"],
-                    summary=state["document_summary"],
+                    title=document_title,
+                    content=document_content,
+                    summary=document_summary,
                     status="generated",
                     document_type="auto",
                     commit_sha=commit_sha,
@@ -89,7 +107,7 @@ def document_saver_node(state: DocumentState) -> DocumentState:
                 session.add(document)
                 session.flush()
                 
-                state["document_id"] = document.id
+                state["document_id"] = int(getattr(document, "id"))
                 state["action"] = "created"
             
             session.commit()
