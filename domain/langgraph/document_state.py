@@ -26,6 +26,8 @@ class DocumentState(TypedDict, total=False):
     access_token: Optional[str]  # GitHub API 액세스 토큰
     
     existing_document: Optional[Dict[str, Any]]  # 기존 문서 (있는 경우)
+    # 부분 업데이트를 위한 대상 섹션 목록 (예: ["overview","modules","changelog"]) 
+    target_doc_sections: Optional[List[str]]
     
     # 분석 결과
     analysis_result: Optional[str]  # LLM 분석 결과 (변경사항 요약)
@@ -38,6 +40,8 @@ class DocumentState(TypedDict, total=False):
     document_title: Optional[str]  # 문서 제목
     document_content: Optional[str]  # 생성/업데이트된 문서 본문 (마크다운)
     document_summary: Optional[str]  # 문서 요약
+    # 부분 업데이트 결과 메타데이터
+    updated_sections: Optional[List[Dict[str, Any]]]
     
     # 저장소 전체 분석 결과 (신규 추가)
     repository_path: Optional[str]  # 다운로드된 저장소 경로
@@ -53,3 +57,7 @@ class DocumentState(TypedDict, total=False):
     # 상태 및 에러
     status: str  # "loading", "analyzing", "analyzing_files", "parsing_files", "summarizing_files", "generating", "saving", "completed", "error"
     error: Optional[str]  # 에러 메시지
+
+    # 실행/환경 관련 옵션
+    openai_api_key: Optional[str]
+    use_mock: Optional[bool]

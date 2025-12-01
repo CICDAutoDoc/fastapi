@@ -6,6 +6,9 @@ import json
 import os
 from typing import Dict, List, Optional, Any, Callable
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+import threading
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -69,11 +72,47 @@ def file_summarizer_node(
 
     summarizer = _get_summarizer_strategy(use_mock, openai_api_key, use_full_code)
 
+    # 병렬 처리 설정
+    max_workers = int(os.getenv("FILE_SUMMARIZER_MAX_CONCURRENCY", "4"))
+    max_workers = max(1, max_workers)
+
     file_summaries = []
-    for idx, file_info in enumerate(parsed_files, 1):
-        print(f"[FileSummarizer] Summarizing {idx}/{len(parsed_files)}: {file_info.get('file_path')}")
+    
+    def _process_file(idx: int, file_info: Dict[str, Any]) -> Dict[str, Any]:
+        thread_id = threading.current_thread().name
+        file_path = file_info.get('file_path', 'unknown')
+        start = time.time()
+        print(f"  [{thread_id}] 시작: {idx}/{len(parsed_files)} - {file_path}")
+        
         summary = summarizer(file_info, repository_path)
-        file_summaries.append(summary)
+        
+        elapsed = time.time() - start
+        print(f"  [{thread_id}] 완료: {file_path} ({elapsed:.2f}s)")
+        return summary
+
+    if len(parsed_files) > 1 and max_workers > 1 and not use_mock:
+        workers = min(max_workers, len(parsed_files))
+        print(f"[파일 요약 병렬 처리] {len(parsed_files)}개 파일, {workers}개 워커 사용")
+        start_time = time.time()
+        
+        with ThreadPoolExecutor(max_workers=workers) as ex:
+            futures = {ex.submit(_process_file, idx, f): idx for idx, f in enumerate(parsed_files, 1)}
+            for fut in as_completed(futures):
+                file_summaries.append(fut.result())
+        
+        elapsed = time.time() - start_time
+        print(f"[파일 요약 병렬 완료] {elapsed:.2f}초 소요")
+    else:
+        print(f"[파일 요약 순차 처리] {len(parsed_files)}개 파일")
+        start_time = time.time()
+        
+        for idx, file_info in enumerate(parsed_files, 1):
+            print(f"[FileSummarizer] Summarizing {idx}/{len(parsed_files)}: {file_info.get('file_path')}")
+            summary = summarizer(file_info, repository_path)
+            file_summaries.append(summary)
+        
+        elapsed = time.time() - start_time
+        print(f"[파일 요약 순차 완료] {elapsed:.2f}초 소요")
 
     state["file_summaries"] = file_summaries
     state["status"] = "generating_document"

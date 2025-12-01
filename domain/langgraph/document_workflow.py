@@ -109,28 +109,34 @@ class DocumentWorkflow:
         
         workflow.add_node("document_saver", document_saver_node)
         
-        # 조건부 라우팅 함수
-        def should_analyze_full_repository(state: DocumentState) -> str:
-            """전체 저장소 분석이 필요한지 결정"""
-            if state.get("needs_full_analysis", False):
-                return "repository_analyzer"
+
+        
+        # 조건부 라우팅 함수: 업데이트 여부에 따라 change_analyzer 실행 결정
+        def route_after_decider(state: DocumentState) -> str:
+            """기존 문서가 있으면 change_analyzer로, 없으면 바로 repository_analyzer로"""
+            if state.get("should_update", False):
+                # 기존 문서 업데이트 → 변경사항 분석 필요
+                return "change_analyzer"
             else:
-                return "document_generator"
+                # 신규 문서 생성 → 전체 저장소 분석
+                return "repository_analyzer"
         
         # 워크플로우 연결
         workflow.set_entry_point("data_loader")
-        workflow.add_edge("data_loader", "change_analyzer")
-        workflow.add_edge("change_analyzer", "document_decider")
+        workflow.add_edge("data_loader", "document_decider")
         
-        # 조건부 분기: 전체 저장소 분석 또는 직접 문서 생성
+        # 조건부 분기: 기존 문서 있으면 change_analyzer, 없으면 repository_analyzer
         workflow.add_conditional_edges(
             "document_decider",
-            should_analyze_full_repository,
+            route_after_decider,
             {
-                "repository_analyzer": "repository_analyzer",
-                "document_generator": "document_generator"
+                "change_analyzer": "change_analyzer",
+                "repository_analyzer": "repository_analyzer"
             }
         )
+        
+        # change_analyzer 이후에는 document_generator로
+        workflow.add_edge("change_analyzer", "document_generator")
         
         # 저장소 분석 → 파일 파싱 → 파일 요약 → 전체 문서 생성
         workflow.add_edge("repository_analyzer", "file_parser")

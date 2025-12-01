@@ -5,11 +5,14 @@ Full Repository Document Generator Node
 
 import json
 from typing import Dict, List, Optional, Any
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage
 from ..document_state import DocumentState
+from ..utils.llm_backoff import invoke_with_retry
 
 
 # ============================================================
@@ -48,25 +51,43 @@ class FullRepoDocumentLLM:
         return str(content).strip()
 
     def generate_overview(self, files, structure, repo_name) -> str:
+        import time, threading
+        tname = threading.current_thread().name
+        start = time.time()
+        print(f"  [{tname}] Section 'overview' 시작")
         system_prompt, builder = self.prompt_set["overview"]
         human_prompt = builder(files, structure, repo_name)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
-        resp = self.llm.invoke(messages)
-        return self._normalize_content(resp)
+        resp = invoke_with_retry(self.llm, messages)
+        out = self._normalize_content(resp)
+        print(f"  [{tname}] Section 'overview' 완료 ({time.time()-start:.2f}s)")
+        return out
 
     def generate_architecture(self, files, structure, repo_name) -> str:
+        import time, threading
+        tname = threading.current_thread().name
+        start = time.time()
+        print(f"  [{tname}] Section 'architecture' 시작")
         system_prompt, builder = self.prompt_set["architecture"]
         human_prompt = builder(files, structure, repo_name)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
-        resp = self.llm.invoke(messages)
-        return self._normalize_content(resp)
+        resp = invoke_with_retry(self.llm, messages)
+        out = self._normalize_content(resp)
+        print(f"  [{tname}] Section 'architecture' 완료 ({time.time()-start:.2f}s)")
+        return out
 
     def generate_key_modules(self, files, structure, repo_name) -> str:
+        import time, threading
+        tname = threading.current_thread().name
+        start = time.time()
+        print(f"  [{tname}] Section 'modules' 시작")
         system_prompt, builder = self.prompt_set["modules"]
         human_prompt = builder(files, structure, repo_name)
         messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
-        resp = self.llm.invoke(messages)
-        return self._normalize_content(resp)
+        resp = invoke_with_retry(self.llm, messages)
+        out = self._normalize_content(resp)
+        print(f"  [{tname}] Section 'modules' 완료 ({time.time()-start:.2f}s)")
+        return out
 
 
 # ============================================================
@@ -252,16 +273,41 @@ def full_repository_document_generator_node(
         llm = FullRepoDocumentLLM(openai_api_key, effective_version)
         doc_builder = FullRepoDocumentBuilder(repo_name)
 
-        print("[FullRepoDocGen] Generating overview...")
-        overview = llm.generate_overview(file_summaries, repo_struct, repo_name)
-        print("[FullRepoDocGen] Generating architecture...")
-        architecture = llm.generate_architecture(file_summaries, repo_struct, repo_name)
-        print("[FullRepoDocGen] Generating key modules...")
-        modules = llm.generate_key_modules(file_summaries, repo_struct, repo_name)
+        # 병렬로 각 섹션 생성 (환경변수 FULL_DOC_MAX_CONCURRENCY)
+        max_workers = int(os.getenv("FULL_DOC_MAX_CONCURRENCY", "3"))
+        max_workers = max(1, min(max_workers, 3))
+        tasks = [
+            ("overview", llm.generate_overview, (file_summaries, repo_struct, repo_name)),
+            ("architecture", llm.generate_architecture, (file_summaries, repo_struct, repo_name)),
+            ("modules", llm.generate_key_modules, (file_summaries, repo_struct, repo_name)),
+        ]
 
-        doc_builder.add("overview", overview)
-        doc_builder.add("architecture", architecture)
-        doc_builder.add("modules", modules)
+        results: Dict[str, str] = {}
+        if max_workers > 1:
+            print(f"[FullRepoDocGen] Generating sections in parallel (workers={max_workers})")
+            with ThreadPoolExecutor(max_workers=max_workers) as ex:
+                futures = {ex.submit(func, *args): key for key, func, args in tasks}
+                for fut in as_completed(futures):
+                    key = futures[fut]
+                    try:
+                        results[key] = fut.result()
+                        print(f"[FullRepoDocGen] Section '{key}' generated")
+                    except Exception as se:
+                        print(f"[FullRepoDocGen] Section '{key}' failed: {se}")
+                        results[key] = ""
+        else:
+            print("[FullRepoDocGen] Generating sections sequentially")
+            for key, func, args in tasks:
+                print(f"[FullRepoDocGen] Generating {key}...")
+                try:
+                    results[key] = func(*args)
+                except Exception as se:
+                    print(f"[FullRepoDocGen] Section '{key}' failed: {se}")
+                    results[key] = ""
+
+        doc_builder.add("overview", results.get("overview", ""))
+        doc_builder.add("architecture", results.get("architecture", ""))
+        doc_builder.add("modules", results.get("modules", ""))
 
         result = doc_builder.build(file_summaries)
 
