@@ -24,7 +24,7 @@ LangGraph 기반 자동 문서 생성 시스템의 문서 관리 API입니다.
 - `failed`: 생성 실패
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
@@ -32,8 +32,12 @@ import os
 
 from .schema import DocumentResponse, DocumentUpdate
 from database import get_db
-from models import Document, CodeChange
+from models import Document, CodeChange, User
 from app.logging_config import get_logger
+
+import httpx
+import base64
+from app.config import GITHUB_API_URL
 
 logger = get_logger("document_router")
 router = APIRouter(
@@ -104,97 +108,127 @@ async def read_document(document_id: int, db: Session = Depends(get_db)):
         logger.error(f"Error retrieving document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @router.patch(
-    "/{document_id}", 
+    "/{document_id}",
     response_model=DocumentResponse,
-    summary="문서 업데이트",
-    description="클라이언트에서 편집 완료된 문서를 저장하고 상태를 업데이트합니다.",
+    summary="문서 내용 및 상태 업데이트",
+    description="""
+    사용자가 수정한 문서 내용을 저장하거나 상태를 변경합니다.
+
+    - **Partial Update**: 변경하고 싶은 필드만 골라서 보내면 됩니다.
+    - **자동 상태 변경**: `content` 내용만 수정하면 상태가 자동으로 `edited`로 변경됩니다.
+    - **수동 상태 변경**: `status` 값을 직접 보내면 그 값이 우선 적용됩니다.
+    """,
     responses={
         200: {
-            "description": "문서 업데이트 성공",
+            "description": "업데이트 성공",
             "content": {
                 "application/json": {
                     "example": {
                         "id": 123,
-                        "title": "수정된 문서 제목",
-                        "content": "# 편집된 내용\n\n사용자가 수정한 문서 내용",
+                        "title": "수정된 제목",
+                        "content": "# 수정된 내용...",
                         "status": "edited",
-                        "updated_at": "2024-01-15T14:20:00Z"
+                        "updated_at": "2024-01-15T14:30:00Z"
                     }
                 }
             }
         },
-        400: {"description": "잘못된 요청 데이터"},
+        400: {"description": "업데이트할 필드가 없음"},
         404: {"description": "문서를 찾을 수 없음"},
         500: {"description": "서버 내부 오류"}
     }
 )
 async def update_document(
-    document_id: int, 
-    doc_update: DocumentUpdate,
-    db: Session = Depends(get_db)
+        document_id: int,
+        doc_update: DocumentUpdate = Body(
+            ...,
+            example={
+                "title": "제목만 수정하고 싶을 때",
+                "content": "내용만 수정하고 싶을 때 (status는 자동 변경됨)",
+                "status": "edited"
+            },
+            openapi_examples={
+                "Title Only": {
+                    "summary": "제목만 수정",
+                    "description": "제목만 변경하고 싶을 때 사용합니다.",
+                    "value": {
+                        "title": "새로운 제목 v2"
+                    }
+                },
+                "Content Only": {
+                    "summary": "내용만 수정 (자동 상태 변경)",
+                    "description": "내용을 수정하면 `status`는 자동으로 `edited`로 바뀝니다.",
+                    "value": {
+                        "content": "## 수정된 마크다운 내용\n- 여기에 내용을 입력하세요"
+                    }
+                },
+                "Review Complete": {
+                    "summary": "검토 완료 처리",
+                    "description": "내용 수정 없이 상태만 `reviewed`로 변경합니다.",
+                    "value": {
+                        "status": "reviewed"
+                    }
+                },
+                "Full Update": {
+                    "summary": "전체 수정",
+                    "description": "제목, 내용, 상태를 한 번에 수정합니다.",
+                    "value": {
+                        "title": "최종 수정본",
+                        "content": "# 최종 내용...",
+                        "status": "reviewed"
+                    }
+                }
+            }
+        ),
+        db: Session = Depends(get_db)
 ):
     """
-    ## 문서 업데이트
-    
-    클라이언트에서 편집된 문서 내용을 저장합니다.
-    
-    ### 기능
-    - 문서 제목, 내용, 상태 업데이트
-    - 부분 업데이트 지원 (변경된 필드만 전송)
-    - 자동 타임스탬프 갱신
-    - content 변경 시 status 자동 'edited'로 변경
-    
-    ### 요청 예시
-    ```json
-    {
-        "title": "새로운 제목",
-        "content": "# 수정된 마크다운 내용",
-        "status": "reviewed"
-    }
-    ```
-    
     ### status 필드 사용 가능한 값
     - `generated`: LLM으로 자동 생성된 상태 (기본값)
     - `edited`: 사용자가 편집한 상태
     - `reviewed`: 검토 완료된 상태
     - `failed`: 생성 실패한 상태
-    
-    ### 주의사항
-    - 최소 하나의 필드는 제공되어야 합니다
-    - content 변경 시 자동으로 status가 'edited'로 변경됩니다
+
+    ### 💡 핵심 동작 원리
+    1. **필드는 모두 선택(Optional)**입니다.
+       - 빈 객체 `{}`를 보내면 400 에러가 납니다. 최소 1개 필드는 보내야 합니다.
+    2. **상태 자동 변경 규칙**:
+       - `content`를 수정했는데 `status`를 안 보내면 서버가 `status = 'edited'`로 자동 설정.
+       - `status`를 직접 보내면 보낸 값(`reviewed` 등)이 그대로 적용됨.
     """
     try:
         # 1. 기존 문서 조회
         document = db.query(Document).filter(Document.id == document_id).first()
-        
+
         if not document:
             raise HTTPException(status_code=404, detail="Document not found")
-        
+
         # 2. 업데이트 데이터 준비
         update_data = doc_update.model_dump(exclude_unset=True)
-        
+
         if not update_data:
             raise HTTPException(status_code=400, detail="No fields to update")
-        
+
         # 3. 문서 업데이트
         for field, value in update_data.items():
             if hasattr(document, field):
                 setattr(document, field, value)
-        
+
         # 4. content가 변경되면 자동으로 상태를 'edited'로 변경
         if "content" in update_data and "status" not in update_data:
             setattr(document, 'status', 'edited')
-        
+
         setattr(document, 'updated_at', datetime.utcnow())
-        
+
         # 5. DB 저장
         db.commit()
         db.refresh(document)
-        
+
         logger.info(f"Document updated: {document_id}")
         return DocumentResponse.model_validate(document)
-        
+
     except Exception as e:
         db.rollback()
         logger.error(f"Error updating document {document_id}: {e}")
@@ -202,7 +236,7 @@ async def update_document(
 
 
 @router.get(
-    "/", 
+    "/",
     response_model=List[DocumentResponse],
     summary="문서 목록 조회",
     description="조건에 따라 문서 목록을 조회합니다. 필터링과 페이징을 지원합니다.",
@@ -236,17 +270,26 @@ async def update_document(
     }
 )
 async def list_documents(
-    repository_name: Optional[str] = None,
-    status: Optional[str] = None,  # 사용 가능한 값: 'generated', 'edited', 'reviewed', 'failed'
-    limit: int = 50,
-    offset: int = 0,
+    repository_name: Optional[str] = Query(
+        None,
+        description="저장소 전체 이름 (format: `owner/repo`)",
+        example="user/my-project"
+    ),
+    status: Optional[str] = Query(
+        None,
+        description="문서 상태",
+        enum=["generated", "edited", "reviewed", "failed"],
+        example="generated"
+    ),
+    limit: int = Query(50, ge=1, le=100, description="조회 개수"),
+    offset: int = Query(0, ge=0, description="시작 위치"),
     db: Session = Depends(get_db)
 ):
     """
     ## 문서 목록 조회
-    
+
     조건에 맞는 문서들의 목록을 조회합니다.
-    
+
     ### 필터링 옵션
     - **repository_name**: 특정 저장소의 문서만 조회 (예: "owner/repo")
     - **status**: 특정 상태의 문서만 조회
@@ -254,35 +297,35 @@ async def list_documents(
       - `edited`: 사용자가 편집한 문서
       - `reviewed`: 검토 완료된 문서
       - `failed`: 생성 실패한 문서
-    
+
     ### 페이징 옵션
     - **limit**: 한 번에 가져올 문서 수 (기본값: 50, 최대: 100)
     - **offset**: 건너뛸 문서 수 (페이징을 위한 시작점)
-    
+
     ### 사용 예시
     - 관리자 대시보드에서 전체 문서 목록 확인
     - 특정 저장소의 편집된 문서들만 필터링
     - 페이징으로 대용량 문서 목록 처리
-    
+
     ### 정렬
     - 최신 생성 순으로 정렬됩니다 (created_at DESC)
     """
     try:
         query = db.query(Document)
-        
+
         # 필터 적용
         if repository_name:
             query = query.filter(Document.repository_name == repository_name)
-        
+
         if status:
             query = query.filter(Document.status == status)
-        
+
         # 정렬 및 페이징
         documents = query.order_by(Document.created_at.desc()).offset(offset).limit(limit).all()
-        
+
         logger.info(f"Documents listed: {len(documents)} items")
         return [DocumentResponse.model_validate(doc) for doc in documents]
-        
+
     except Exception as e:
         logger.error(f"Error listing documents: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -495,3 +538,111 @@ async def get_latest_document(
         )
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post(
+    "/{document_id}/publish",
+    summary="GitHub README로 발행",
+    description="""
+    생성된 문서를 해당 GitHub 저장소의 README.md 파일로 커밋(업로드)합니다. 기존 README.md가 있으면 덮어쓰고(Update), 없으면 새로 만듭니다(Create).
+    """,
+    responses={
+        200: {
+            "description": "발행 성공",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "success": True,
+                        "message": "Successfully published to owner/repo/README.md",
+                        "commit_sha": "7b0a3..."
+                    }
+                }
+            }
+        },
+        404: {"description": "문서 또는 사용자 토큰을 찾을 수 없음"},
+        403: {"description": "GitHub 권한 부족 (쓰기 권한 없음)"}
+    }
+)
+async def publish_document_to_github(
+        document_id: int,
+        user_id: int = Query(..., description="GitHub에 커밋할 사용자 ID (DB PK)"),
+        branch: str = Query("main", description="커밋할 브랜치"),
+        message: str = Query("Docs: Update README.md by AutoDoc", description="커밋 메시지"),
+        db: Session = Depends(get_db)
+):
+    try:
+        # 1. 문서 조회
+        document = db.query(Document).filter(Document.id == document_id).first()
+        if not document:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        repo_full_name = document.repository_name  # "owner/repo"
+
+        # 2. 사용자 토큰 조회
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.access_token:
+            raise HTTPException(status_code=404, detail="User or GitHub token not found")
+
+        access_token = user.access_token
+
+        # 3. GitHub API 호출
+        async with httpx.AsyncClient() as client:
+            headers = {
+                "Authorization": f"token {access_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+
+            file_path = "README.md"
+            base_url = "https://api.github.com"
+            url = f"{base_url}/repos/{repo_full_name}/contents/{file_path}"
+
+            # 3-1. 기존 파일 확인 (SHA 값 획득용)
+            get_response = await client.get(url, headers=headers, params={"ref": branch})
+            sha = None
+
+            if get_response.status_code == 200:
+                file_data = get_response.json()
+                sha = file_data.get("sha")
+            elif get_response.status_code == 404:
+                pass  # 파일이 없으면 생성
+            else:
+                # 권한 문제 등 다른 에러
+                raise HTTPException(
+                    status_code=get_response.status_code,
+                    detail=f"Failed to check README: {get_response.text}"
+                )
+
+            # 3-2. 파일 내용 인코딩 (GitHub API는 Base64 요구)
+            content_bytes = document.content.encode('utf-8')
+            content_base64 = base64.b64encode(content_bytes).decode('utf-8')
+
+            # 3-3. PUT 요청 (생성/수정)
+            payload = {
+                "message": message,
+                "content": content_base64,
+                "branch": branch
+            }
+            if sha:
+                payload["sha"] = sha  # 업데이트 시 필수
+
+            put_response = await client.put(url, headers=headers, json=payload)
+
+            if put_response.status_code not in [200, 201]:
+                error_detail = put_response.json()
+                raise HTTPException(
+                    status_code=put_response.status_code,
+                    detail=f"Commit failed: {error_detail.get('message')}"
+                )
+
+            commit_data = put_response.json().get("commit", {})
+
+            logger.info(f"Document {document_id} published to {repo_full_name}")
+
+            return {
+                "success": True,
+                "message": f"Successfully published to {repo_full_name}/README.md",
+                "commit_sha": commit_data.get("sha")
+            }
+
+    except Exception as e:
+        logger.error(f"Error publishing document {document_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
