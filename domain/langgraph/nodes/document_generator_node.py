@@ -486,7 +486,7 @@ def _handle_partial_update(state: DocumentState, llm: Optional[ChatOpenAI], use_
             new_text_local = _update_section_mock(section_key, trimmed_old, commit_msg)
         else:
             # 스레드 안전을 위해 새 LLM 인스턴스를 생성 (모델명 동일)
-            llm_model = getattr(llm, 'model_name', getattr(llm, 'model', 'gpt-5')) if llm else 'gpt-5'
+            llm_model = getattr(llm, 'model_name', getattr(llm, 'model', 'gpt-4o-mini')) if llm else 'gpt-4o-mini'
             local_llm = llm if max_workers == 1 else ChatOpenAI(model=llm_model, temperature=0.2)
             new_text_local = _update_section_llm(section_key, trimmed_old, local_llm, file_summaries, analysis, commit_msg)
         changed_flag = new_text_local.strip() != sec_old.strip()
