@@ -56,7 +56,7 @@ SYSTEM_VARIANTS = {
     "v1": "목표: 기본 구조 유지, 적당한 설명 허용.",
     "v2": "목표: 엄격한 간결성 (각 문단 최대 3문장, 리스트 항목 최대 6개).", 
     "v3": "목표: 초압축 (각 문장 40자 이하 권장, 리스트 항목 최대 4개).",
-    "v4": "목표: 후처리 친화. 각 섹션 종료 직후 JSON 메타데이터 1줄 추가.",
+    "v4": "목표: 간결하고 구조화된 출력. JSON 메타데이터나 부가 설명 없이 순수 Markdown만 생성.",
 }
 
 def build_system_prompt(version: str) -> str:
@@ -93,7 +93,6 @@ def _overview_task(repo_name: str, data_json: str, version: str) -> str:
         "- '기술 스택'은 계층별 구성 (Frontend/Backend/Database)\n"
         "- '강점/특징'은 아키텍처 특성과 기술 선택의 장점 위주\n"
         f"데이터:{data_json}\n"
-        + ("섹션 종료 후 {\"section\":\"overview\",\"version\":\"" + version + "\"}" if version == "v4" else "")
     )
 
 def _architecture_task(data_json: str, version: str) -> str:
@@ -117,7 +116,7 @@ def _architecture_task(data_json: str, version: str) -> str:
         "  * 노드명은 실제 파일명 또는 폴더명 활용\n"
         "- 웹 프레임워크, ORM, 데이터베이스 연결 등 표준 패턴 적용\n"
         f"데이터:{data_json}\n"
-        + ("섹션 종료 후 {\"section\":\"architecture\",\"version\":\"" + version + "\"}" if version == "v4" else "")
+        #+ ("섹션 종료 후 {\"section\":\"architecture\",\"version\":\"" + version + "\"}" if version == "v4" else "")
     )
 
 def _modules_task(data_json: str, version: str) -> str:
@@ -143,7 +142,7 @@ def _modules_task(data_json: str, version: str) -> str:
         "- 언어별 특성 반영 (Python: Django/FastAPI, Java: Spring, JS: Express 등)\n"
         "- 개선 포인트는 아키텍처, 성능, 유지보수성 관점에서 제안\n"
         f"데이터:{data_json}\n"
-        + ("섹션 종료 후 {\"section\":\"modules\",\"version\":\"" + version + "\"}" if version == "v4" else "")
+        #+ ("섹션 종료 후 {\"section\":\"modules\",\"version\":\"" + version + "\"}" if version == "v4" else "")
     )
 
 # ============================================================
@@ -170,7 +169,7 @@ __all__ = ["get_prompt_set", "PROMPT_VERSIONS", "DEFAULT_VERSION"]
 
 
 # ==========================
-# System Prompts (Korean)
+# System Prompts 
 # ==========================
 BASE_SYSTEM_PROMPT = (
     """당신은 대규모 코드베이스 문서를 작성하는 전문 아키텍트입니다.
