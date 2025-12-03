@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from database import Base
 
@@ -89,6 +89,7 @@ class FileChange(Base):
     # 관계 설정
     code_change = relationship("CodeChange", back_populates="file_changes")
 
+KST = timezone(timedelta(hours=9))
 
 class Document(Base):
     __tablename__ = "documents"
@@ -103,8 +104,8 @@ class Document(Base):
     repository_name = Column(String(255))
     generation_metadata = Column(JSON)  # LLM 처리 메타데이터
     code_change_id = Column(Integer, ForeignKey("code_changes.id"))
-    created_at = Column(DateTime, default=datetime.now(timezone.utc))
-    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(KST))
+    updated_at = Column(DateTime, default=lambda: datetime.now(KST), onupdate=lambda: datetime.now(KST))
 
     # 관계 설정
     code_change = relationship("CodeChange", back_populates="document")
