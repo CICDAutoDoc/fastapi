@@ -1,0 +1,50 @@
+{
+  "new_feature": {
+    "input": {
+      "analysis_result": "Mock analysis for new_feature: This change introduces significant improvements to the codebase architecture.",
+      "changed_files": [
+        "src/api/new_endpoint.py",
+        "src/models/user.py"
+      ],
+      "commit_sha": "abc1234"
+    },
+    "output": {
+      "status": "saving",
+      "document_length": 333,
+      "document_preview": "# abc1234 코드 변경사항\n\n##  변경사항 요약\nMock analysis for new_feature: This change introduces significant improvements to the codebase architecture.\n\n##  커밋 정보\n- SHA: abc1234\n- 메시지: Add new user authentication endpoint\n- 변경된 파일: src/api/new_endpoint.py, src/models/user.py\n\n##  상세 내용\nMock 모드로 생성된 문서입니다. \n실제 O...",
+      "summary": "abc1234 커밋의 코드 변경사항 문서"
+    }
+  },
+  "bug_fix": {
+    "input": {
+      "analysis_result": "Mock analysis for bug_fix: This change introduces significant improvements to the codebase architecture.",
+      "changed_files": [
+        "src/utils/validator.py"
+      ],
+      "commit_sha": "def5678"
+    },
+    "output": {
+      "status": "saving",
+      "document_length": 302,
+      "document_preview": "# def5678 코드 변경사항\n\n##  변경사항 요약\nMock analysis for bug_fix: This change introduces significant improvements to the codebase architecture.\n\n##  커밋 정보\n- SHA: def5678\n- 메시지: Fix email validation regex bug\n- 변경된 파일: src/utils/validator.py\n\n##  상세 내용\nMock 모드로 생성된 문서입니다. \n실제 OpenAI API를 사용하면 더 상세한 분석이 제공됩니다...",
+      "summary": "def5678 커밋의 코드 변경사항 문서"
+    }
+  },
+  "refactoring": {
+    "input": {
+      "analysis_result": "Mock analysis for refactoring: This change introduces significant improvements to the codebase architecture.",
+      "changed_files": [
+        "src/services/payment.py",
+        "src/models/order.py",
+        "tests/test_payment.py"
+      ],
+      "commit_sha": "ghi9012"
+    },
+    "output": {
+      "status": "saving",
+      "document_length": 369,
+      "document_preview": "# ghi9012 코드 변경사항\n\n##  변경사항 요약\nMock analysis for refactoring: This change introduces significant improvements to the codebase architecture.\n\n##  커밋 정보\n- SHA: ghi9012\n- 메시지: Refactor payment service to use new architecture\n- 변경된 파일: src/services/payment.py, src/models/order.py, tests/test_payment.py\n...",
+      "summary": "ghi9012 커밋의 코드 변경사항 문서"
+    }
+  }
+}
