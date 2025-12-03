@@ -110,18 +110,12 @@ def document_saver_node(state: DocumentState) -> DocumentState:
                 
                 state["document_id"] = int(getattr(document, "id"))
                 state["action"] = "created"
-            
-            session.commit()
-            state["status"] = "completed"
-            return state
             '''
 
-            # 신규 문서 생성 (기존 로직의 else 블록 내용과 동일하게 처리)
+            # 신규 문서 생성
             document_title = state.get("document_title")
             if not document_title:
-                # 업데이트 모드일 경우 제목이 없을 수 있으니 기존 제목 가져오기
-                existing = state.get("existing_document", {})
-                document_title = existing.get("title") or f"{state.get('repository_name')} Documentation"
+                raise ValueError("Document title missing before save")
 
             document = Document(
                 title=document_title,
@@ -135,19 +129,20 @@ def document_saver_node(state: DocumentState) -> DocumentState:
                 generation_metadata={
                     "analysis_result": state.get("analysis_result"),
                     "changed_files": state.get("changed_files"),
-                    "previous_doc_id": state.get("existing_document", {}).get("id")  # (선택사항) 이전 문서 ID 기록 가능
                 }
             )
-
             session.add(document)
             session.flush()
 
             state["document_id"] = int(getattr(document, "id"))
-            state["action"] = "created"  # 무조건 created로 반환
-
+            state["action"] = "created"
+            
             session.commit()
             state["status"] = "completed"
             return state
+
+
+
 
         finally:
             session.close()
