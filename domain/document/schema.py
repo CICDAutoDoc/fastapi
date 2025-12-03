@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 # 1.데이터베이스에서 조회하여 클라이언트에게 전송할 문서 응답 스키마
@@ -23,7 +23,9 @@ class DocumentUpdate(BaseModel):
     content: Optional[str] = None
 
 
-# 요청 Body 모델 정의 (내용 수정용)
-class ContentUpdate(BaseModel):
-    title: Optional[str] = None
-    content: str  # 내용은 필수
+
+class DiffResponse(BaseModel):
+    old_content: str
+    new_content: str
+    last_updated: datetime
+    diff_lines: Optional[List[str]] = None
