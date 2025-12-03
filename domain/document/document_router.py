@@ -30,13 +30,14 @@ from typing import List, Optional
 from datetime import datetime
 import os
 
-from .schema import DocumentResponse, DocumentUpdate, ContentUpdate
+from .schema import DocumentResponse, DocumentUpdate, DiffResponse
 from database import get_db
 from models import Document, CodeChange, User
 from app.logging_config import get_logger
 
 import httpx
 import base64
+import difflib
 from app.config import GITHUB_API_URL
 
 from pydantic import BaseModel
@@ -567,3 +568,101 @@ async def publish_document_to_github(
     except Exception as e:
         logger.error(f"Error publishing document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/{document_id}/diff",
+    response_model=DiffResponse,
+    summary="문서 변경 내역 조회 (Diff)",
+    description="""
+    특정 문서(`document_id`)와 같은 저장소의 **바로 직전 버전 문서**를 비교하여 변경 사항을 반환합니다.
+
+    ### 동작 원리
+    1. 현재 문서(`new_content`)와 같은 저장소(`repository_name`)를 공유하는 문서들을 찾습니다.
+    2. 현재 문서보다 **이전에 생성된 문서 중 가장 최신 문서**(`old_content`)를 가져옵니다.
+    3. 두 문서가 존재하면, 줄 단위로 비교하여 **Git 스타일의 Diff**(`diff_lines`)를 생성합니다.
+
+    ### 반환값 설명
+    - **old_content**: 변경 전 문서 내용 (마크다운)
+    - **new_content**: 변경 후(현재) 문서 내용 (마크다운)
+    - **diff_lines**: 변경 사항 리스트 (Git Diff 형식)
+      - `+` 로 시작: 추가된 줄 (초록색 권장)
+      - `-` 로 시작: 삭제된 줄 (빨간색 권장)
+      - ` ` (공백)으로 시작: 변경 없는 줄
+    """,
+    responses={
+        200: {
+            "description": "변경 내역 조회 성공",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "old_content": "# Old Title\nThis is old content.",
+                        "new_content": "# New Title\nThis is new content.\nAdded line.",
+                        "last_updated": "2024-03-20T10:00:00Z",
+                        "diff_lines": [
+                            "--- Previous Version",
+                            "+++ Current Version",
+                            "@@ -1,2 +1,3 @@",
+                            "-# Old Title",
+                            "+# New Title",
+                            " This is old content.",
+                            "-This is old content.",
+                            "+This is new content.",
+                            "+Added line."
+                        ]
+                    }
+                }
+            }
+        },
+        404: {
+            "description": "문서를 찾을 수 없음",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Document not found"}
+                }
+            }
+        }
+    }
+)
+async def get_repository_document_diff(document_id: int, db: Session = Depends(get_db)):
+    # 1. 현재 문서 조회
+    current_doc = db.query(Document).filter(Document.id == document_id).first()
+    if not current_doc:
+        raise HTTPException(status_code=404, detail="Document not found")
+
+    # 2. 같은 레포지토리의 "바로 이전 문서" 조회
+    prev_doc = db.query(Document) \
+        .filter(Document.repository_name == current_doc.repository_name) \
+        .filter(Document.id < document_id) \
+        .order_by(Document.id.desc()) \
+        .first()
+
+    if not prev_doc:
+        # 이전 문서가 없는 경우 (첫 번째 문서)
+        return DiffResponse(
+            old_content="",
+            new_content=current_doc.content,
+            last_updated=current_doc.created_at,
+            diff_lines=[]  # 변경 없음 (또는 전체가 추가된 것으로 처리 가능)
+        )
+
+    # 3. 변경 사항 계산 (difflib)
+    old_lines = prev_doc.content.splitlines(keepends=True)
+    new_lines = current_doc.content.splitlines(keepends=True)
+
+    diff_generator = difflib.unified_diff(
+        old_lines,
+        new_lines,
+        fromfile='Previous Version',
+        tofile='Current Version',
+        lineterm=''
+    )
+
+    diff_result = list(diff_generator)
+
+    return DiffResponse(
+        old_content=prev_doc.content,
+        new_content=current_doc.content,
+        last_updated=current_doc.created_at,
+        diff_lines=diff_result
+    )
