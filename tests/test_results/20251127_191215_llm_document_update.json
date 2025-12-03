@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "workflow": "document_update_llm",
+  "steps": {
+    "1_analysis": {
+      "status": "saving",
+      "analysis_length": 373,
+      "analysis_content": "1. **주요 변경사항**: \n   - `README.md` 파일에 배포 가이드가 추가됨.\n   - `docs/deployment.md` 파일이 업데이트됨.\n\n2. **변경 이유**: \n   - 배포 가이드를 추가하고 API 문서를 업데이트하여 사용자들이 배포 과정과 API 사용법을 더 쉽게 이해할 수 있도록 하기 위함.\n\n3. **영향 범위**: \n   - 문서화 관련 기능에 영향을 주며, 특히 새로운 배포 가이드를 통해 개발자들이 배포 프로세스를 이해하고 실행하는 데 도움을 줄 수 있음.\n\n4. **기술적 세부사항**: \n   - 문서화 관련 변경으로, Markdown 형식이 사용됨. 배포 가이드와 API 문서의 내용이 명확하게 정리되어 사용자에게 제공됨."
+    },
+    "2_document_update": {
+      "status": "saving",
+      "original_length": 496,
+      "updated_length": 943,
+      "content_changed": true,
+      "summary": "이 문서는 JWT 기반 인증 서비스를 제공하는 FastAPI의 기능과 API 엔드포인트를 설명합니다. 주요 기능으로는 사용자 등록, 로그인, JWT 토큰 생성 및 검증, bcrypt를 통한 비밀번호 해싱, 보안을 위한 속도 제한이 포함됩니다. 최근 변경 사항으로는 초기 인증 시스템 구현과 배포 가이드 추가가 있으며, 문서화가 개선되어 개발자들이 배포 과정을 이해하고 실행하는 데 도움이 됩니다.",
+      "updated_content": "```markdown\n# FastAPI Authentication Service Documentation\n\n## Overview\nThis service provides JWT-based authentication for web applications.\n\n## Features\n- User registration and login\n- JWT token generation and validation\n- Password hashing with bcrypt\n- Rate limiting for security\n\n## API Endpoints\n- POST /auth/register - User registration\n- POST /auth/login - User authentication\n- GET /auth/me - Get current user info\n\n## Recent Changes\n- Initial authentication system implementation\n- Added deployment guide in `README.md`\n- Updated `docs/deployment.md` for clearer deployment instructions\n\n## Impact\n- Documentation-related features have been enhanced, particularly through the new deployment guide, aiding developers in understanding and executing the deployment process.\n\n## Technical Details\n- Documentation changes utilize Markdown format, ensuring that the deployment guide and API documentation are clearly organized for users.\n```"
+    }
+  },
+  "quality_analysis": {
+    "content_coherence": true,
+    "preserves_structure": true,
+    "adds_new_information": true,
+    "maintains_formatting": true,
+    "integration_quality": {
+      "smooth_integration": true,
+      "proper_sectioning": true,
+      "maintains_context": true
+    }
+  }
+}
