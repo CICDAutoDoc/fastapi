@@ -61,7 +61,8 @@ def document_saver_node(state: DocumentState) -> DocumentState:
                 raise ValueError("code_change_id missing before save")
             code_change = state.get("code_change", {})
             commit_sha = code_change.get("commit_sha", "") if code_change else ""
-            
+
+            '''
             if should_update:
                 # 기존 문서 업데이트
                 existing_doc = state.get("existing_document", {})
@@ -113,7 +114,41 @@ def document_saver_node(state: DocumentState) -> DocumentState:
             session.commit()
             state["status"] = "completed"
             return state
-            
+            '''
+
+            # 신규 문서 생성 (기존 로직의 else 블록 내용과 동일하게 처리)
+            document_title = state.get("document_title")
+            if not document_title:
+                # 업데이트 모드일 경우 제목이 없을 수 있으니 기존 제목 가져오기
+                existing = state.get("existing_document", {})
+                document_title = existing.get("title") or f"{state.get('repository_name')} Documentation"
+
+            document = Document(
+                title=document_title,
+                content=document_content,
+                summary=document_summary,
+                status="generated",
+                document_type="auto",
+                commit_sha=commit_sha,
+                repository_name=state.get("repository_name"),
+                code_change_id=code_change_id,
+                generation_metadata={
+                    "analysis_result": state.get("analysis_result"),
+                    "changed_files": state.get("changed_files"),
+                    "previous_doc_id": state.get("existing_document", {}).get("id")  # (선택사항) 이전 문서 ID 기록 가능
+                }
+            )
+
+            session.add(document)
+            session.flush()
+
+            state["document_id"] = int(getattr(document, "id"))
+            state["action"] = "created"  # 무조건 created로 반환
+
+            session.commit()
+            state["status"] = "completed"
+            return state
+
         finally:
             session.close()
             
