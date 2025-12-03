@@ -10,7 +10,7 @@ class SetupWebhookRequest(BaseModel):
     repo_owner: str = Field(description="저장소 소유자", examples=["octocat"])
     repo_name: str = Field(description="저장소 이름", examples=["Hello-World"])
     access_token: str = Field(description="GitHub 액세스 토큰", examples=["gho_xxxxxxxxxxxx"])
-    webhook_url: str = Field(description="웹훅 수신 URL", examples=["https://api.example.com"])
+    webhook_url: str = Field(description="웹훅 수신 URL", examples=["http://15.165.120.222"])
 
 
 class WebhookInfo(BaseModel):

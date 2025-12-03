@@ -20,5 +20,10 @@ class DocumentResponse(BaseModel):
 
 class DocumentUpdate(BaseModel):
     title: Optional[str] = None
-    content: Optional[str] = None # 편집된 Markdown 내용
-    status: Optional[str] = None # 상태를 'EDITED' 또는 'REVIEW_DONE' 등으로 변경 요청
+    content: Optional[str] = None
+
+
+# 요청 Body 모델 정의 (내용 수정용)
+class ContentUpdate(BaseModel):
+    title: Optional[str] = None
+    content: str  # 내용은 필수

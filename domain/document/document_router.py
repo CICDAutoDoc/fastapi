@@ -30,7 +30,7 @@ from typing import List, Optional
 from datetime import datetime
 import os
 
-from .schema import DocumentResponse, DocumentUpdate
+from .schema import DocumentResponse, DocumentUpdate, ContentUpdate
 from database import get_db
 from models import Document, CodeChange, User
 from app.logging_config import get_logger
@@ -38,6 +38,8 @@ from app.logging_config import get_logger
 import httpx
 import base64
 from app.config import GITHUB_API_URL
+
+from pydantic import BaseModel
 
 logger = get_logger("document_router")
 router = APIRouter(
@@ -109,129 +111,48 @@ async def read_document(document_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch(
+
+
+@router.put(
     "/{document_id}",
     response_model=DocumentResponse,
-    summary="문서 내용 및 상태 업데이트",
+    summary="수정한 문서 저장",
     description="""
-    사용자가 수정한 문서 내용을 저장하거나 상태를 변경합니다.
-
-    - **Partial Update**: 변경하고 싶은 필드만 골라서 보내면 됩니다.
-    - **자동 상태 변경**: `content` 내용만 수정하면 상태가 자동으로 `edited`로 변경됩니다.
-    - **수동 상태 변경**: `status` 값을 직접 보내면 그 값이 우선 적용됩니다.
-    """,
-    responses={
-        200: {
-            "description": "업데이트 성공",
-            "content": {
-                "application/json": {
-                    "example": {
-                        "id": 123,
-                        "title": "수정된 제목",
-                        "content": "# 수정된 내용...",
-                        "status": "edited",
-                        "updated_at": "2024-01-15T14:30:00Z"
-                    }
-                }
-            }
-        },
-        400: {"description": "업데이트할 필드가 없음"},
-        404: {"description": "문서를 찾을 수 없음"},
-        500: {"description": "서버 내부 오류"}
-    }
+    사용자가 수정한 내용(`content`)과 제목(`title`)을 저장합니다. 기존의 문서를 수정한 문서로 덮어씌웁니다.
+    이 API를 호출하면 문서 상태(`status`)가 `edited`로 변경됩니다.
+    """
 )
 async def update_document(
         document_id: int,
-        doc_update: DocumentUpdate = Body(
-            ...,
-            example={
-                "title": "제목만 수정하고 싶을 때",
-                "content": "내용만 수정하고 싶을 때 (status는 자동 변경됨)",
-                "status": "edited"
-            },
-            openapi_examples={
-                "Title Only": {
-                    "summary": "제목만 수정",
-                    "description": "제목만 변경하고 싶을 때 사용합니다.",
-                    "value": {
-                        "title": "새로운 제목 v2"
-                    }
-                },
-                "Content Only": {
-                    "summary": "내용만 수정 (자동 상태 변경)",
-                    "description": "내용을 수정하면 `status`는 자동으로 `edited`로 바뀝니다.",
-                    "value": {
-                        "content": "## 수정된 마크다운 내용\n- 여기에 내용을 입력하세요"
-                    }
-                },
-                "Review Complete": {
-                    "summary": "검토 완료 처리",
-                    "description": "내용 수정 없이 상태만 `reviewed`로 변경합니다.",
-                    "value": {
-                        "status": "reviewed"
-                    }
-                },
-                "Full Update": {
-                    "summary": "전체 수정",
-                    "description": "제목, 내용, 상태를 한 번에 수정합니다.",
-                    "value": {
-                        "title": "최종 수정본",
-                        "content": "# 최종 내용...",
-                        "status": "reviewed"
-                    }
-                }
-            }
-        ),
+        update_req: DocumentUpdate,
         db: Session = Depends(get_db)
 ):
-    """
-    ### status 필드 사용 가능한 값
-    - `generated`: LLM으로 자동 생성된 상태 (기본값)
-    - `edited`: 사용자가 편집한 상태
-    - `reviewed`: 검토 완료된 상태
-    - `failed`: 생성 실패한 상태
+    document = db.query(Document).filter(Document.id == document_id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
 
-    ### 💡 핵심 동작 원리
-    1. **필드는 모두 선택(Optional)**입니다.
-       - 빈 객체 `{}`를 보내면 400 에러가 납니다. 최소 1개 필드는 보내야 합니다.
-    2. **상태 자동 변경 규칙**:
-       - `content`를 수정했는데 `status`를 안 보내면 서버가 `status = 'edited'`로 자동 설정.
-       - `status`를 직접 보내면 보낸 값(`reviewed` 등)이 그대로 적용됨.
-    """
+    if update_req.content is None and update_req.title is None:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    # 1. 내용/제목 업데이트
+    if update_req.content is not None:
+        document.content = update_req.content
+    if update_req.title is not None:
+        document.title = update_req.title
+
+    # 2. 상태를 'edited'로 변경
+    document.status = "edited"
+
+    # 3. 수정 시간 갱신
+    document.updated_at = datetime.utcnow()
+
     try:
-        # 1. 기존 문서 조회
-        document = db.query(Document).filter(Document.id == document_id).first()
-
-        if not document:
-            raise HTTPException(status_code=404, detail="Document not found")
-
-        # 2. 업데이트 데이터 준비
-        update_data = doc_update.model_dump(exclude_unset=True)
-
-        if not update_data:
-            raise HTTPException(status_code=400, detail="No fields to update")
-
-        # 3. 문서 업데이트
-        for field, value in update_data.items():
-            if hasattr(document, field):
-                setattr(document, field, value)
-
-        # 4. content가 변경되면 자동으로 상태를 'edited'로 변경
-        if "content" in update_data and "status" not in update_data:
-            setattr(document, 'status', 'edited')
-
-        setattr(document, 'updated_at', datetime.utcnow())
-
-        # 5. DB 저장
         db.commit()
         db.refresh(document)
-
-        logger.info(f"Document updated: {document_id}")
+        logger.info(f"Document content saved: {document_id}")
         return DocumentResponse.model_validate(document)
-
     except Exception as e:
         db.rollback()
-        logger.error(f"Error updating document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
