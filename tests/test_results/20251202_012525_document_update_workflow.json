@@ -1,0 +1,23 @@
+{
+  "workflow": "document_update",
+  "steps": {
+    "1_analysis": {
+      "status": "saving",
+      "analysis_length": 187,
+      "analysis_preview": "## 주요 변경사항\n- 파일 수정: README.md, docs/api.md\n- 커밋 메시지: Update documentation with new API endpoints\n\n## 변경 이유\n코드 개선 및 기능 추가를 위한 변경\n\n## 영향 범위\n수정된 파일들의 관련 기능에 영향\n\n## 기술적 세부사항\n- 추가/수정 라인(+): 0\n..."
+    },
+    "2_document_update": {
+      "status": "saving",
+      "original_length": 182,
+      "updated_length": 398,
+      "content_changed": true,
+      "summary": "jkl3456 커밋의 코드 변경사항 문서"
+    }
+  },
+  "validation": {
+    "should_update_flag": true,
+    "existing_document_processed": true,
+    "content_preservation": false,
+    "new_content_added": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "missing_commit_info": {
+    "error_occurred": false,
+    "final_status": "generating",
+    "has_error_field": false,
+    "error_message": null
+  },
+  "empty_changed_files": {
+    "error_occurred": false,
+    "final_status": "generating",
+    "has_error_field": false,
+    "error_message": null
+  },
+  "missing_diff_content": {
+    "error_occurred": false,
+    "final_status": "generating",
+    "has_error_field": false,
+    "error_message": null
+  }
+}

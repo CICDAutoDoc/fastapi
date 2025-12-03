@@ -1,0 +1,93 @@
+{
+  "feat": {
+    "scenario": {
+      "message": "feat: add user profile management",
+      "files": [
+        "src/controllers/profile.py",
+        "src/models/profile.py"
+      ],
+      "expected_keywords": [
+        "기능",
+        "추가",
+        "profile"
+      ]
+    },
+    "analysis_status": "saving",
+    "document_status": "saving",
+    "keywords_found": [
+      "기능",
+      "추가",
+      "profile"
+    ],
+    "keywords_coverage": 1.0,
+    "document_length": 432,
+    "summary": "abc1234 커밋의 코드 변경사항 문서"
+  },
+  "fix": {
+    "scenario": {
+      "message": "fix: resolve database connection timeout",
+      "files": [
+        "src/database/connection.py"
+      ],
+      "expected_keywords": [
+        "수정",
+        "버그",
+        "database"
+      ]
+    },
+    "analysis_status": "saving",
+    "document_status": "saving",
+    "keywords_found": [
+      "수정",
+      "database"
+    ],
+    "keywords_coverage": 0.6666666666666666,
+    "document_length": 400,
+    "summary": "abc1234 커밋의 코드 변경사항 문서"
+  },
+  "docs": {
+    "scenario": {
+      "message": "docs: update API documentation",
+      "files": [
+        "docs/api.md",
+        "README.md"
+      ],
+      "expected_keywords": [
+        "문서",
+        "업데이트",
+        "API"
+      ]
+    },
+    "analysis_status": "saving",
+    "document_status": "saving",
+    "keywords_found": [
+      "문서",
+      "API"
+    ],
+    "keywords_coverage": 0.6666666666666666,
+    "document_length": 372,
+    "summary": "abc1234 커밋의 코드 변경사항 문서"
+  },
+  "refactor": {
+    "scenario": {
+      "message": "refactor: improve error handling structure",
+      "files": [
+        "src/utils/errors.py",
+        "src/handlers/error_handler.py"
+      ],
+      "expected_keywords": [
+        "리팩터링",
+        "구조",
+        "error"
+      ]
+    },
+    "analysis_status": "saving",
+    "document_status": "saving",
+    "keywords_found": [
+      "error"
+    ],
+    "keywords_coverage": 0.3333333333333333,
+    "document_length": 452,
+    "summary": "abc1234 커밋의 코드 변경사항 문서"
+  }
+}

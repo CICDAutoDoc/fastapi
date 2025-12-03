@@ -1,0 +1,408 @@
+[
+  {
+    "summary": {
+      "file_path": "main.py",
+      "language": "python",
+      "summary": {
+        "file_path": "main.py",
+        "directory": "unknown",
+        "file_name": "main.py",
+        "language": "python",
+        "loc": 34,
+        "complexity_score": 1,
+        "module_type": "router",
+        "responsibility": "This file sets up the FastAPI application and configures CORS middleware, allowing cross-origin requests from specified origins.",
+        "summary": "The main entry point for the FastAPI application, which includes routers for user and document domains and configures CORS settings.",
+        "key_features": [
+          "Initializes FastAPI application",
+          "Configures CORS middleware",
+          "Includes routers for user and document functionalities"
+        ],
+        "exports": [],
+        "functions": [],
+        "classes": [],
+        "imports": [
+          "sys",
+          "os",
+          "fastapi.FastAPI",
+          "starlette.middleware.cors.CORSMiddleware",
+          "domain.user.git_router",
+          "domain.document.document_router"
+        ],
+        "dependencies": {
+          "internal": [
+            "domain.user.git_router",
+            "domain.document.document_router"
+          ],
+          "external": [
+            "fastapi",
+            "starlette"
+          ]
+        },
+        "architecture_role": {
+          "layer": "application",
+          "upstream": [],
+          "downstream": [],
+          "data_flow": "The application receives requests from clients and routes them to the appropriate handlers."
+        },
+        "api_endpoints": [],
+        "model_schema": {
+          "fields": []
+        },
+        "tests": [],
+        "functions_count": 0,
+        "classes_count": 0,
+        "imports_count": 0
+      },
+      "generated_at": "llm",
+      "generation_method": "llm",
+      "included_full_code": true,
+      "full_code": "import sys\nimport os\n\n# 현재 파일(main.py)이 위치한 디렉토리의 절대 경로를 '동적으로' 알아냅니다.\nPROJECT_ROOT_DIR = os.path.dirname(os.path.abspath(__file__))\n\n# sys.path 목록에 계산된 경로를 추가합니다.\nif PROJECT_ROOT_DIR not in sys.path:\n    sys.path.append(PROJECT_ROOT_DIR)\n\nfrom fastapi import FastAPI\nfrom starlette.middleware.cors import CORSMiddleware\n\nfrom domain.user import git_router\nfrom domain.document import document_router\n\napp = FastAPI()\n\norigins = [\n    \"http://127.0.0.1:5173\",\n    \"http://localhost:3000\",\n]\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=origins,\n    allow_credentials=True,\n    allow_methods=[\"*\"],\n    allow_headers=[\"*\"],\n)\n\n# 라우터 등록\napp.include_router(git_router.router)\napp.include_router(document_router.router)"
+    },
+    "quality_analysis": {
+      "quality_score": 20,
+      "grade": "D",
+      "good_points": [
+        "3개의 주요 기능 식별됨"
+      ],
+      "issues": [
+        "누락된 필드: ['purpose', 'role']",
+        "목적 설명이 너무 간단함",
+        "복잡도 평가가 누락됨",
+        "의존성 분석이 누락됨",
+        "유지보수성 평가가 누락됨"
+      ]
+    },
+    "timestamp": "2025-11-22T01:21:36.764739"
+  },
+  {
+    "summary": {
+      "file_path": "models.py",
+      "language": "python",
+      "summary": {
+        "file_path": "models.py",
+        "directory": "",
+        "file_name": "models.py",
+        "language": "python",
+        "loc": 110,
+        "complexity_score": 1,
+        "module_type": "model",
+        "responsibility": "Defines the database models for GitHub-related entities such as User, Repository, WebhookRegistration, CodeChange, FileChange, and Document.",
+        "summary": "This file contains SQLAlchemy ORM models that represent the structure of the database for managing GitHub-related data, including users, repositories, webhooks, code changes, and documents.",
+        "key_features": [
+          "Defines relationships between models using SQLAlchemy ORM.",
+          "Includes fields for storing GitHub user and repository information.",
+          "Handles webhook registrations and code change tracking."
+        ],
+        "exports": [],
+        "functions": [],
+        "classes": [
+          "User",
+          "Repository",
+          "WebhookRegistration",
+          "CodeChange",
+          "FileChange",
+          "Document"
+        ],
+        "imports": [
+          "Column",
+          "Integer",
+          "String",
+          "Text",
+          "DateTime",
+          "ForeignKey",
+          "Boolean",
+          "JSON",
+          "relationship",
+          "datetime",
+          "timezone",
+          "Base"
+        ],
+        "dependencies": {
+          "internal": [
+            "database"
+          ],
+          "external": [
+            "sqlalchemy",
+            "datetime"
+          ]
+        },
+        "architecture_role": {
+          "layer": "domain",
+          "upstream": [],
+          "downstream": [],
+          "data_flow": "Models interact with the database to store and retrieve GitHub-related data."
+        },
+        "api_endpoints": [],
+        "model_schema": {
+          "fields": []
+        },
+        "tests": [],
+        "functions_count": 0,
+        "classes_count": 0,
+        "imports_count": 0
+      },
+      "generated_at": "llm",
+      "generation_method": "llm",
+      "included_full_code": true,
+      "full_code": "from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, JSON\nfrom sqlalchemy.orm import relationship\nfrom datetime import datetime, timezone\n\nfrom database import Base\n\n\n# GitHub 관련 모델들\nclass User(Base):\n    __tablename__ = \"users\"\n\n    id = Column(Integer, primary_key=True)\n    github_id = Column(Integer, unique=True, nullable=False)\n    username = Column(String(100), nullable=False)\n    email = Column(String(255))\n    access_token = Column(Text)  # 암호화해서 저장 필요\n    created_at = Column(DateTime, default=datetime.utcnow)\n\n    # 관계 설정\n    repositories = relationship(\"Repository\", back_populates=\"owner\")\n\n\nclass Repository(Base):\n    __tablename__ = \"repositories\"\n\n    id = Column(Integer, primary_key=True)\n    github_id = Column(Integer, unique=True, nullable=False)\n    name = Column(String(255), nullable=False)\n    full_name = Column(String(255), nullable=False)\n    default_branch = Column(String(100), default=\"main\")\n    is_private = Column(Boolean, default=False)\n    owner_id = Column(Integer, ForeignKey(\"users.id\"))\n    created_at = Column(DateTime, default=datetime.utcnow)\n\n    # 관계 설정\n    owner = relationship(\"User\", back_populates=\"repositories\")\n    webhook_registrations = relationship(\"WebhookRegistration\", back_populates=\"repository\")\n    code_changes = relationship(\"CodeChange\", back_populates=\"repository\")\n\n\nclass WebhookRegistration(Base):\n    __tablename__ = \"webhook_registrations\"\n\n    id = Column(Integer, primary_key=True)\n    repo_owner = Column(String(100), nullable=False)\n    repo_name = Column(String(255), nullable=False)\n    webhook_id = Column(Integer, unique=True, nullable=False)\n    webhook_url = Column(Text, nullable=False)\n    access_token = Column(Text)  # 암호화해서 저장 필요\n    is_active = Column(Boolean, default=True)\n    repository_id = Column(Integer, ForeignKey(\"repositories.id\"))\n    created_at = Column(DateTime, default=datetime.utcnow)\n\n    # 관계 설정\n    repository = relationship(\"Repository\", back_populates=\"webhook_registrations\")\n\n\nclass CodeChange(Base):\n    __tablename__ = \"code_changes\"\n\n    id = Column(Integer, primary_key=True)\n    commit_sha = Column(String(40), nullable=False)\n    commit_message = Column(Text)\n    author_name = Column(String(100))\n    author_email = Column(String(255))\n    repository_id = Column(Integer, ForeignKey(\"repositories.id\"))\n    source = Column(String(20))  # \"push\" or \"pr_merge\"\n    total_changes = Column(Integer, default=0)\n    timestamp = Column(DateTime, default=datetime.utcnow)\n\n    # 관계 설정\n    repository = relationship(\"Repository\", back_populates=\"code_changes\")\n    file_changes = relationship(\"FileChange\", back_populates=\"code_change\")\n    document = relationship(\"Document\", back_populates=\"code_change\", uselist=False)\n\n\nclass FileChange(Base):\n    __tablename__ = \"file_changes\"\n\n    id = Column(Integer, primary_key=True)\n    filename = Column(Text, nullable=False)\n    status = Column(String(20))  # \"added\", \"modified\", \"removed\"\n    changes = Column(Integer, default=0)\n    additions = Column(Integer, default=0)\n    deletions = Column(Integer, default=0)\n    patch = Column(Text)  # diff patch text from GitHub (optional)\n    code_change_id = Column(Integer, ForeignKey(\"code_changes.id\"))\n\n    # 관계 설정\n    code_change = relationship(\"CodeChange\", back_populates=\"file_changes\")\n\n\nclass Document(Base):\n    __tablename__ = \"documents\"\n\n    id = Column(Integer, primary_key=True)\n    title = Column(String(500), nullable=False)\n    content = Column(Text, nullable=False)\n    summary = Column(Text)  # 문서 요약\n    status = Column(String(20), default=\"generated\")  # \"generated\", \"failed\", \"updating\"\n    document_type = Column(String(50), default=\"auto\")  # \"auto\", \"manual\", \"merged\"\n    commit_sha = Column(String(40), nullable=False, unique=True)  # 중복 방지\n    repository_name = Column(String(255))\n    generation_metadata = Column(JSON)  # LLM 처리 메타데이터\n    code_change_id = Column(Integer, ForeignKey(\"code_changes.id\"))\n    created_at = Column(DateTime, default=datetime.now(timezone.utc))\n    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))\n\n    # 관계 설정\n    code_change = relationship(\"CodeChange\", back_populates=\"document\")"
+    },
+    "quality_analysis": {
+      "quality_score": 20,
+      "grade": "D",
+      "good_points": [
+        "3개의 주요 기능 식별됨"
+      ],
+      "issues": [
+        "누락된 필드: ['purpose', 'role']",
+        "목적 설명이 너무 간단함",
+        "복잡도 평가가 누락됨",
+        "의존성 분석이 누락됨",
+        "유지보수성 평가가 누락됨"
+      ]
+    },
+    "timestamp": "2025-11-22T01:21:36.769728"
+  },
+  {
+    "summary": {
+      "file_path": "domain/langgraph/nodes/file_summarizer_node.py",
+      "language": "python",
+      "summary": {
+        "file_path": "domain/langgraph/nodes/file_summarizer_node.py",
+        "directory": "domain/langgraph/nodes",
+        "file_name": "file_summarizer_node.py",
+        "language": "python",
+        "loc": 361,
+        "complexity_score": 1,
+        "module_type": "service",
+        "responsibility": "파일 요약 생성을 위한 서비스 노드",
+        "summary": "이 파일은 LLM 기반의 파일 요약 생성을 위한 기능을 제공하며, 다양한 파일을 요약하는 데 필요한 설정과 유틸리티를 포함하고 있습니다.",
+        "key_features": [
+          "파일 요약 생성 기능",
+          "환경 변수 기반 설정",
+          "Mock 및 LLM 전략 선택 기능"
+        ],
+        "exports": [],
+        "functions": [
+          "file_summarizer_node",
+          "set_error",
+          "_get_summarizer_strategy",
+          "_generate_mock_file_summary",
+          "_generate_file_summary_with_llm",
+          "_generate_fallback_file_summary",
+          "_build_system_prompt",
+          "_build_user_prompt",
+          "_extract_text",
+          "_extract_json",
+          "_get_file_content_preview"
+        ],
+        "classes": [
+          "FileSummarizerConfig"
+        ],
+        "imports": [
+          "json",
+          "os",
+          "Dict",
+          "List",
+          "Optional",
+          "Any",
+          "Callable",
+          "Path",
+          "ChatOpenAI",
+          "HumanMessage",
+          "SystemMessage",
+          "DocumentState"
+        ],
+        "dependencies": {
+          "internal": [],
+          "external": [
+            "langchain_openai",
+            "langchain_core"
+          ]
+        },
+        "architecture_role": {
+          "layer": "application",
+          "upstream": [],
+          "downstream": [],
+          "data_flow": "파일 정보에서 요약 결과로의 데이터 흐름"
+        },
+        "api_endpoints": [],
+        "model_schema": {
+          "fields": []
+        },
+        "tests": [],
+        "functions_count": 0,
+        "classes_count": 0,
+        "imports_count": 0
+      },
+      "generated_at": "llm",
+      "generation_method": "llm",
+      "included_full_code": true,
+      "full_code": "\"\"\"\nFile Summarizer Node - LLM 기반 파일 요약 생성\n\"\"\"\n\nimport json\nimport os\nfrom typing import Dict, List, Optional, Any, Callable\nfrom pathlib import Path\n\nfrom langchain_openai import ChatOpenAI\nfrom langchain_core.messages import HumanMessage, SystemMessage\n\nfrom ..document_state import DocumentState\n\n\n# ============================================================\n# Config & Utility\n# ============================================================\n\nclass FileSummarizerConfig:\n    \"\"\"Summarizer 관련 환경 설정\"\"\"\n    DEFAULT_MODEL = os.getenv(\"DOC_SUMMARIZER_MODEL\", \"gpt-4o-mini\")\n    SUMMARY_LIMIT = int(os.getenv(\"FILE_SUMMARY_LIMIT\", \"30\"))\n\n    @staticmethod\n    def limit_files(files: List[Dict[str, Any]]) -> List[Dict[str, Any]]:\n        \"\"\"파일 개수 제한 적용\"\"\"\n        if len(files) > FileSummarizerConfig.SUMMARY_LIMIT > 0:\n            print(\n                f\"[FileSummarizer] Limiting {len(files)} → {FileSummarizerConfig.SUMMARY_LIMIT}\"\n            )\n            return files[:FileSummarizerConfig.SUMMARY_LIMIT]\n        return files\n\n\ndef set_error(state: DocumentState, message: str) -> DocumentState:\n    state[\"error\"] = message\n    state[\"status\"] = \"error\"\n    return state\n\n\n# ============================================================\n# Main Node\n# ============================================================\n\nINCLUDE_FULL_CODE = os.getenv(\"FILE_SUMMARY_INCLUDE_FULL_CODE\", \"false\").lower() in {\"1\", \"true\", \"yes\"}\nMAX_CODE_CHARS = int(os.getenv(\"FILE_SUMMARY_MAX_CODE_CHARS\", \"15000\"))\n\n\ndef file_summarizer_node(\n    state: DocumentState,\n    use_mock: bool = False,\n    openai_api_key: Optional[str] = None,\n    include_full_code: Optional[bool] = None,\n) -> DocumentState:\n\n    parsed_files = state.get(\"parsed_files\")\n    if not parsed_files:\n        return set_error(state, \"No parsed_files to summarize\")\n\n    parsed_files = FileSummarizerConfig.limit_files(parsed_files)\n    repository_path = str(state.get(\"repository_path\", \"\") or \"\")\n\n    print(f\"[FileSummarizer] Target files: {len(parsed_files)}\")\n\n    # --- Decide Strategy ---\n    # include_full_code 우선 순위: 함수 인자 > 환경변수 > False\n    use_full_code = include_full_code if include_full_code is not None else INCLUDE_FULL_CODE\n\n    summarizer = _get_summarizer_strategy(use_mock, openai_api_key, use_full_code)\n\n    file_summaries = []\n    for idx, file_info in enumerate(parsed_files, 1):\n        print(f\"[FileSummarizer] Summarizing {idx}/{len(parsed_files)}: {file_info.get('file_path')}\")\n        summary = summarizer(file_info, repository_path)\n        file_summaries.append(summary)\n\n    state[\"file_summaries\"] = file_summaries\n    state[\"status\"] = \"generating_document\"\n\n    print(f\"[FileSummarizer] Completed: {len(file_summaries)} summaries\")\n    return state\n\n\n# ============================================================\n# Strategy Selector (Mock / LLM / Fallback)\n# ============================================================\n\ndef _get_summarizer_strategy(\n    use_mock: bool,\n    openai_api_key: Optional[str],\n    use_full_code: bool\n) -> Callable:\n\n    if use_mock:\n        return lambda info, repo: _generate_mock_file_summary(info, use_full_code)\n\n    if not openai_api_key:\n        print(\"[FileSummarizer] No API key → switching to mock mode.\")\n        return lambda info, repo: _generate_mock_file_summary(info, use_full_code)\n\n    # Real LLM strategy\n    llm = ChatOpenAI(\n        api_key=lambda: openai_api_key,\n        model=FileSummarizerConfig.DEFAULT_MODEL,\n        temperature=0.1,\n    )\n    return lambda info, repo: (\n        _generate_file_summary_with_llm(info, llm, repo, use_full_code)\n        or _generate_fallback_file_summary(info)\n    )\n\n\n# ============================================================\n# Mock Summary Generator\n# ============================================================\n\ndef _generate_mock_file_summary(file_info: Dict[str, Any], use_full_code: bool) -> Dict[str, Any]:\n    \"\"\"Mock 파일 요약 생성\"\"\"\n    file_path = file_info.get(\"file_path\", \"\")\n    language = file_info.get(\"language\", \"\")\n    functions, classes, imports = (\n        file_info.get(\"functions\", []),\n        file_info.get(\"classes\", []),\n        file_info.get(\"imports\", []),\n    )\n\n    file_name = Path(file_path).stem\n\n    mock_patterns = {\n        \"main\": (\"애플리케이션의 진입점 역할\", \"초기화 및 설정 모듈\"),\n        \"model\": (\"데이터 모델 정의\", \"스키마 및 ORM 매핑\"),\n        \"schema\": (\"데이터 구조 정의\", \"Pydantic 기반 검증\"),\n        \"test\": (\"테스트 모듈\", \"테스트 케이스 실행 및 검증\"),\n        \"router\": (\"API 라우팅 기능\", \"엔드포인트 관리\"),\n        \"service\": (\"비즈니스 로직 처리\", \"서비스 계층 역할\"),\n    }\n\n    purpose, role = next(\n        ((v[0], v[1]) for k, v in mock_patterns.items() if k in file_name.lower()),\n        (f\"{language.title()} 기능 모듈\", \"모듈 기능 제공\"),\n    )\n\n    code_block = None\n    if use_full_code and isinstance(file_info.get(\"full_code\"), str):\n        raw = file_info[\"full_code\"]\n        if len(raw) > MAX_CODE_CHARS:\n            raw = raw[:MAX_CODE_CHARS] + \"\\n... (truncated) ...\"\n        code_block = raw\n\n    summary = {\n        \"file_path\": file_path,\n        \"language\": language,\n        \"summary\": {\n            \"purpose\": purpose,\n            \"role\": role,\n            \"key_features\": [\n                f\"{len(functions)}개 함수\",\n                f\"{len(classes)}개 클래스\",\n                \"모듈화된 구조 유지\"\n            ],\n            \"complexity_assessment\": \"보통\",\n            \"dependency_analysis\": [f\"{len(imports)}개 의존성\"],\n            \"maintainability\": \"양호\",\n            \"functions_count\": len(functions),\n            \"classes_count\": len(classes),\n            \"imports_count\": len(imports),\n            \"loc\": file_info.get(\"loc\", 0)\n        },\n        \"generated_at\": \"mock\",\n        \"generation_method\": \"mock\",\n        \"included_full_code\": bool(code_block),\n        \"full_code\": code_block,\n    }\n\n    return summary\n\n\n# ============================================================\n# LLM-based Summary Generator\n# ============================================================\n\ndef _generate_file_summary_with_llm(\n    file_info: Dict[str, Any],\n    llm: ChatOpenAI,\n    repository_path: str,\n    use_full_code: bool,\n) -> Optional[Dict[str, Any]]:\n\n    try:\n        file_path = file_info.get(\"file_path\", \"\")\n        preview = _get_file_content_preview(file_info, repository_path, use_full_code)\n\n        system_prompt = _build_system_prompt(file_info)\n        user_prompt = _build_user_prompt(file_info, preview)\n\n        messages = [\n            SystemMessage(content=system_prompt),\n            HumanMessage(content=user_prompt)\n        ]\n\n        response = llm.invoke(messages)\n        text = _extract_text(response.content)\n\n        json_block = _extract_json(text)\n        data = json.loads(json_block)\n\n        return {\n            \"file_path\": file_path,\n            \"language\": file_info.get(\"language\", \"\"),\n            \"summary\": {\n                **data,\n                \"functions_count\": len(file_info.get(\"functions\", [])),\n                \"classes_count\": len(file_info.get(\"classes\", [])),\n                \"imports_count\": len(file_info.get(\"imports\", [])),\n                \"loc\": file_info.get(\"loc\", 0),\n            },\n            \"generated_at\": \"llm\",\n            \"generation_method\": \"llm\",\n            \"included_full_code\": use_full_code and isinstance(file_info.get(\"full_code\"), str),\n            \"full_code\": file_info.get(\"full_code\") if use_full_code else None,\n        }\n\n    except Exception as e:\n        print(f\"[FileSummarizer] LLM failure for {file_info.get('file_path')}: {e}\")\n        return None\n\n\n# ============================================================\n# Fallback Summary\n# ============================================================\n\ndef _generate_fallback_file_summary(file_info: Dict[str, Any]) -> Dict[str, Any]:\n    return {\n        \"file_path\": file_info.get(\"file_path\"),\n        \"language\": file_info.get(\"language\"),\n        \"summary\": {\n            \"purpose\": \"언어 기반 기본 소스 파일\",\n            \"role\": \"구현 및 기능 제공\",\n            \"key_features\": [\n                f\"{len(file_info.get('functions', []))}개 함수\",\n                f\"{len(file_info.get('classes', []))}개 클래스\",\n            ],\n            \"complexity_assessment\": \"분석 실패\",\n            \"dependency_analysis\": [\"자동 분석 실패\"],\n            \"maintainability\": \"검토 필요\",\n            \"functions_count\": len(file_info.get(\"functions\", [])),\n            \"classes_count\": len(file_info.get(\"classes\", [])),\n            \"imports_count\": len(file_info.get(\"imports\", [])),\n            \"loc\": file_info.get(\"loc\", 0)\n        },\n        \"generated_at\": \"fallback\",\n        \"generation_method\": \"fallback\"\n    }\n\n\n# ============================================================\n# Prompt Builders & Helpers\n# ============================================================\n\ndef _build_system_prompt(file_info: Dict[str, Any]) -> str:\n    return f\"\"\"\n당신은 대규모 소프트웨어 리포지토리 분석 전문가입니다.\n주어진 파일 정보를 기반으로 다음 JSON 스키마에 맞는 파일 요약을 생성하세요.\n모든 필드를 반드시 포함하고, 알 수 없는 정보는 'unknown' 또는 빈 배열로 처리하세요.\n\n파일: {file_info.get(\"file_path\")}\n언어: {file_info.get(\"language\")}\n라인 수: {file_info.get(\"loc\")}\n복잡도: {file_info.get(\"complexity_score\")}\n\nJSON 스키마:\n{{\n  \"file_path\": \"\",\n  \"directory\": \"\",\n  \"file_name\": \"\",\n  \"language\": \"\",\n  \"loc\": 0,\n  \"complexity_score\": 0,\n  \"module_type\": \"controller | service | model | util | view | router | config | test | script | core | unknown\",\n  \"responsibility\": \"\",\n  \"summary\": \"\",\n  \"key_features\": [],\n  \"exports\": [],\n  \"functions\": [],\n  \"classes\": [],\n  \"imports\": [],\n  \"dependencies\": {{\"internal\": [], \"external\": []}},\n  \"architecture_role\": {{\"layer\": \"presentation | application | domain | infrastructure | unknown\", \"upstream\": [], \"downstream\": [], \"data_flow\": \"\"}},\n  \"api_endpoints\": [],\n  \"model_schema\": {{\"fields\": []}},\n  \"tests\": []\n}}\n\"\"\"\n\ndef _build_user_prompt(file_info: Dict[str, Any], preview: str) -> str:\n    return f\"\"\"\n함수 목록:\n{file_info.get(\"functions\", [])}\n\n클래스 목록:\n{file_info.get(\"classes\", [])}\n\n임포트:\n{file_info.get(\"imports\", [])}\n\n파일 내용 미리보기:\n{preview}\n\n지침:\n1. 모듈 타입(module_type)은 파일의 역할을 가장 잘 나타내는 한 가지를 선택하세요.\n2. responsibility, summary, key_features를 작성해 파일의 핵심 기능과 역할을 명확히 기술하세요.\n3. architecture_role의 layer, upstream/downstream, data_flow를 가능한 범위 내에서 추론하세요.\n4. exports, functions, classes는 실제 코드 구조 기반으로 작성하세요.\n5. api_endpoints, model_schema, tests는 관련 파일인 경우만 작성하고, 없으면 빈 배열로 처리하세요.\n\n위 정보를 기반으로 JSON 형식으로 파일 요약을 생성하세요.\n\"\"\"\n\n\n\ndef _extract_text(content: Any) -> str:\n    if isinstance(content, str):\n        return content\n    if isinstance(content, list):\n        return \"\\n\".join(c for c in content if isinstance(c, str))\n    return str(content)\n\n\ndef _extract_json(text: str) -> str:\n    if \"```json\" in text:\n        start = text.find(\"```json\") + 7\n        end = text.find(\"```\", start)\n        return text[start:end].strip()\n    if \"```\" in text:\n        start = text.find(\"```\") + 3\n        end = text.find(\"```\", start)\n        return text[start:end].strip()\n    return text\n\n\ndef _get_file_content_preview(file_info: Dict[str, Any], repo: str, use_full_code: bool) -> str:\n    if use_full_code and isinstance(file_info.get(\"full_code\"), str):\n        raw = file_info[\"full_code\"]\n        if len(raw) > MAX_CODE_CHARS:\n            raw = raw[:MAX_CODE_CHARS] + \"\\n... (truncated) ...\"\n        return raw\n\n    preview = file_info.get(\"full_code\")\n    if preview:\n        return preview[:500]\n\n    path = Path(repo) / file_info.get(\"file_path\", \"\")\n    if path.exists():\n        try:\n            content = path.read_text(errors=\"ignore\")\n        except Exception:\n            return \"<read error>\"\n        return content[:500]\n\n    return \"<no preview available>\"\n"
+    },
+    "quality_analysis": {
+      "quality_score": 20,
+      "grade": "D",
+      "good_points": [
+        "3개의 주요 기능 식별됨"
+      ],
+      "issues": [
+        "누락된 필드: ['purpose', 'role']",
+        "목적 설명이 너무 간단함",
+        "복잡도 평가가 누락됨",
+        "의존성 분석이 누락됨",
+        "유지보수성 평가가 누락됨"
+      ]
+    },
+    "timestamp": "2025-11-22T01:21:36.770713"
+  },
+  {
+    "summary": {
+      "file_path": "domain/langgraph/nodes/file_parser_node.py",
+      "language": "python",
+      "summary": {
+        "file_path": "domain/langgraph/nodes/file_parser_node.py",
+        "directory": "domain/langgraph/nodes",
+        "file_name": "file_parser_node.py",
+        "language": "python",
+        "loc": 104,
+        "complexity_score": 1,
+        "module_type": "service",
+        "responsibility": "Handles the parsing of code files, delegating parsing logic to appropriate modules and managing the state of the parsing process.",
+        "summary": "This module provides functionality to parse code files using a specified parsing strategy, including a mock mode for testing purposes. It aims to enhance maintainability and readability of the parsing logic.",
+        "key_features": [
+          "Uses Tree-sitter for parsing when available, with fallbacks for different languages.",
+          "Provides a mock mode for testing without actual file parsing.",
+          "Handles errors gracefully and maintains the state of the parsing process."
+        ],
+        "exports": [],
+        "functions": [
+          "file_parser_node",
+          "_resolve_language",
+          "_minimal_error_record"
+        ],
+        "classes": [],
+        "imports": [],
+        "dependencies": {
+          "internal": [
+            "DocumentState",
+            "parse_with_best_effort",
+            "generate_mock_parsing_result"
+          ],
+          "external": [
+            "os",
+            "typing"
+          ]
+        },
+        "architecture_role": {
+          "layer": "application",
+          "upstream": [],
+          "downstream": [],
+          "data_flow": "Processes input from code files and outputs parsed results back to the state."
+        },
+        "api_endpoints": [],
+        "model_schema": {
+          "fields": []
+        },
+        "tests": [],
+        "functions_count": 0,
+        "classes_count": 0,
+        "imports_count": 0
+      },
+      "generated_at": "llm",
+      "generation_method": "llm",
+      "included_full_code": true,
+      "full_code": "\"\"\"\nFile Parser 노드 (경량 오케스트레이터)\n\n목표: 파일 파싱 로직을 모듈로 위임하여 유지보수성과 가독성을 향상.\n- Tree-sitter 사용 가능 시 우선 사용, 불가하면 언어별 Fallback으로 파싱\n- Mock 모드 제공\n\"\"\"\nimport os\nfrom typing import Dict, Any\n\nFULL_CODE_LIMIT = int(os.getenv(\"FILE_PARSER_FULL_CODE_LIMIT\", \"30000\"))  # bytes/characters threshold\n\nfrom ..document_state import DocumentState\nfrom .parser.tree_sitter_parser import parse_with_best_effort\nfrom .parser.mock_parser import generate_mock_parsing_result\n\n\ndef file_parser_node(state: DocumentState, use_mock: bool = False) -> DocumentState:\n    try:\n        code_files = state.get(\"code_files\", [])\n        repository_path = str(state.get(\"repository_path\") or \"\")\n\n        if not code_files:\n            state[\"error\"] = \"No code files to parse\"\n            state[\"status\"] = \"error\"\n            return state\n\n        print(f\"[FileParser] Parsing {len(code_files)} files...\")\n\n        if use_mock:\n            parsed_files = [generate_mock_parsing_result(fi) for fi in code_files]\n            state[\"parsed_files\"] = parsed_files\n            state[\"status\"] = \"summarizing_files\"\n            print(f\"[FileParser] Mock parsing completed for {len(parsed_files)} files\")\n            return state\n\n        parsed_files = []\n        for file_info in code_files:\n            try:\n                lang = _resolve_language(file_info)\n                rel_path = str(file_info.get(\"path\") or \"\")\n                file_path = str(file_info.get(\"full_path\") or os.path.join(repository_path, rel_path))\n\n                if not file_path or not os.path.exists(file_path):\n                    parsed_files.append(_minimal_error_record(file_info, \"File not found\"))\n                    continue\n\n                with open(file_path, \"r\", encoding=\"utf-8\", errors=\"ignore\") as f:\n                    content = f.read()\n\n                result = parse_with_best_effort(content, file_info, lang)\n                # 표준화: file_path는 상대 경로 유지\n                result[\"file_path\"] = file_info.get(\"path\", result.get(\"file_path\", \"\"))\n                # full_code 포함 (크기 제한 내)\n                if len(content) <= FULL_CODE_LIMIT:\n                    result[\"full_code\"] = content\n                parsed_files.append(result)\n            except Exception as e:\n                print(f\"[FileParser] Failed to parse {file_info.get('path', 'unknown')}: {e}\")\n                parsed_files.append(_minimal_error_record(file_info, str(e)))\n\n        state[\"parsed_files\"] = parsed_files\n        state[\"status\"] = \"summarizing_files\"\n        print(f\"[FileParser] Successfully parsed {len(parsed_files)} files\")\n        return state\n    except Exception as e:\n        state[\"error\"] = f\"File parser failed: {str(e)}\"\n        state[\"status\"] = \"error\"\n        return state\n\n\ndef _resolve_language(file_info: Dict[str, Any]) -> str:\n    lang = (file_info.get(\"language\") or \"\").lower()\n    if lang:\n        return lang\n    path = file_info.get(\"path\", \"\")\n    ext = os.path.splitext(path)[1].lower()\n    return {\n        \".py\": \"python\",\n        \".js\": \"javascript\",\n        \".mjs\": \"javascript\",\n        \".ts\": \"typescript\",\n        \".java\": \"java\",\n        \".cpp\": \"cpp\",\n        \".cc\": \"cpp\",\n        \".cxx\": \"cpp\",\n        \".c\": \"c\",\n        \".go\": \"go\",\n    }.get(ext, \"unknown\")\n\n\ndef _minimal_error_record(file_info: Dict[str, Any], message: str) -> Dict[str, Any]:\n    return {\n        \"file_path\": file_info.get(\"path\", \"\"),\n        \"language\": file_info.get(\"language\", \"\"),\n        \"size\": file_info.get(\"size\", 0),\n        \"parsing_error\": message,\n        \"functions\": [],\n        \"classes\": [],\n        \"imports\": [],\n        \"comments\": [],\n        \"complexity_score\": 0,\n        \"loc\": 0,\n    }"
+    },
+    "quality_analysis": {
+      "quality_score": 20,
+      "grade": "D",
+      "good_points": [
+        "3개의 주요 기능 식별됨"
+      ],
+      "issues": [
+        "누락된 필드: ['purpose', 'role']",
+        "목적 설명이 너무 간단함",
+        "복잡도 평가가 누락됨",
+        "의존성 분석이 누락됨",
+        "유지보수성 평가가 누락됨"
+      ]
+    },
+    "timestamp": "2025-11-22T01:21:36.771713"
+  },
+  {
+    "summary": {
+      "file_path": "domain/langgraph/document_service.py",
+      "language": "python",
+      "summary": {
+        "file_path": "domain/langgraph/document_service.py",
+        "directory": "domain/langgraph",
+        "file_name": "document_service.py",
+        "language": "python",
+        "loc": 73,
+        "complexity_score": 1,
+        "module_type": "service",
+        "responsibility": "Handles the automatic generation and updating of documents based on code changes.",
+        "summary": "The DocumentService class provides functionality to process code changes and generate or update documentation using OpenAI's API. It includes methods for initializing the service and processing code changes asynchronously.",
+        "key_features": [
+          "Asynchronous processing of code changes",
+          "Integration with OpenAI API for document generation",
+          "Mock response capability for testing and development"
+        ],
+        "exports": [],
+        "functions": [
+          "get_document_service"
+        ],
+        "classes": [
+          "DocumentService"
+        ],
+        "imports": [
+          "Dict",
+          "Any",
+          "Optional",
+          "os",
+          "DocumentWorkflow"
+        ],
+        "dependencies": {
+          "internal": [
+            "DocumentWorkflow"
+          ],
+          "external": []
+        },
+        "architecture_role": {
+          "layer": "application",
+          "upstream": [],
+          "downstream": [],
+          "data_flow": "Processes code changes and interacts with external APIs for document generation."
+        },
+        "api_endpoints": [],
+        "model_schema": {
+          "fields": []
+        },
+        "tests": [],
+        "functions_count": 0,
+        "classes_count": 0,
+        "imports_count": 0
+      },
+      "generated_at": "llm",
+      "generation_method": "llm",
+      "included_full_code": true,
+      "full_code": "from typing import Dict, Any, Optional\nimport os\nfrom .document_workflow import DocumentWorkflow\n\n\nclass DocumentService:\n    \"\"\"문서 자동 생성/업데이트 서비스\"\"\"\n    \n    def __init__(self, openai_api_key: Optional[str] = None, use_mock: bool = False):\n        \"\"\"\n        Args:\n            openai_api_key: OpenAI API 키\n            use_mock: True면 LLM 대신 Mock 응답 사용 (테스트/개발용)\n        \"\"\"\n        self.openai_api_key = openai_api_key or os.getenv(\"OPENAI_API_KEY\")\n        self.use_mock = use_mock\n    \n    async def process_code_change(self, code_change_id: int) -> Dict[str, Any]:\n        \"\"\"\n        코드 변경사항을 처리하여 문서 생성/업데이트\n        \n        Args:\n            code_change_id: CodeChange ID\n            \n        Returns:\n            {\n                \"success\": True/False,\n                \"document_id\": int,\n                \"action\": \"created\" | \"updated\",\n                \"title\": str,\n                \"summary\": str,\n                \"error\": str  # 실패 시\n            }\n        \"\"\"\n        try:\n            workflow = DocumentWorkflow(\n                openai_api_key=self.openai_api_key,\n                use_mock=self.use_mock\n            )\n            result = workflow.process(code_change_id)\n            return result\n            \n        except Exception as e:\n            return {\n                \"success\": False,\n                \"error\": f\"Document service failed: {str(e)}\"\n            }\n\n\n# 싱글톤 인스턴스\n_service_instance = None\n\n\ndef get_document_service(use_mock: bool = False, openai_api_key: Optional[str] = None) -> DocumentService:\n    \"\"\"\n    문서 서비스 인스턴스 반환\n    \n    Args:\n        use_mock: Mock 사용 여부 - True면 OpenAI API 없이 테스트 가능\n        openai_api_key: OpenAI API 키\n        \n    Returns:\n        DocumentService 인스턴스\n    \"\"\"\n    global _service_instance\n    \n    if _service_instance is None or openai_api_key or use_mock:\n        _service_instance = DocumentService(\n            openai_api_key=openai_api_key,\n            use_mock=use_mock\n        )\n    \n    return _service_instance\n"
+    },
+    "quality_analysis": {
+      "quality_score": 20,
+      "grade": "D",
+      "good_points": [
+        "3개의 주요 기능 식별됨"
+      ],
+      "issues": [
+        "누락된 필드: ['purpose', 'role']",
+        "목적 설명이 너무 간단함",
+        "복잡도 평가가 누락됨",
+        "의존성 분석이 누락됨",
+        "유지보수성 평가가 누락됨"
+      ]
+    },
+    "timestamp": "2025-11-22T01:21:36.773714"
+  }
+]
