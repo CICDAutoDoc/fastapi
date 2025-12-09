@@ -63,6 +63,7 @@ def document_saver_node(state: DocumentState) -> DocumentState:
             code_change = state.get("code_change", {})
             commit_sha = code_change.get("commit_sha", "") if code_change else ""
 
+            '''
             if should_update:
                 # 기존 문서 업데이트
                 existing_doc = state.get("existing_document", {})
@@ -110,6 +111,32 @@ def document_saver_node(state: DocumentState) -> DocumentState:
 
                 state["document_id"] = int(getattr(document, "id"))
                 state["action"] = "created"
+            '''
+
+            # 신규 문서 생성
+            document_title = state.get("document_title")
+            if not document_title:
+                raise ValueError("Document title missing before save")
+
+            document = Document(
+                title=document_title,
+                content=document_content,
+                summary=document_summary,
+                status="generated",
+                document_type="auto",
+                commit_sha=commit_sha,
+                repository_name=state.get("repository_name"),
+                code_change_id=code_change_id,
+                generation_metadata={
+                    "analysis_result": state.get("analysis_result"),
+                    "changed_files": state.get("changed_files"),
+                }
+            )
+            session.add(document)
+            session.flush()
+
+            state["document_id"] = int(getattr(document, "id"))
+            state["action"] = "created"
 
             session.commit()
             state["status"] = "completed"
