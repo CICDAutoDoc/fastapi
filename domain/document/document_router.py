@@ -667,3 +667,67 @@ async def get_repository_document_diff(document_id: int, db: Session = Depends(g
         last_updated=current_doc.created_at,
         diff_lines=diff_result
     )
+
+
+@router.get(
+    "/owner/{repo_owner}",
+    response_model=List[DocumentResponse],
+    summary="사용자별 모든 최신 문서 조회",
+    description="특정 사용자(`repo_owner`)가 소유한 모든 저장소의 최신 문서를 조회합니다.",
+    responses={
+        200: {
+            "description": "문서 목록 조회 성공",
+            "content": {
+                "application/json": {
+                    "example": [
+                        {
+                            "id": 125,
+                            "title": "Repo A Documentation",
+                            "repository_name": "user/repo-a",
+                            "status": "generated",
+                            "created_at": "2024-03-20T12:00:00Z"
+                        },
+                        {
+                            "id": 123,
+                            "title": "Repo B Update",
+                            "repository_name": "user/repo-b",
+                            "status": "edited",
+                            "created_at": "2024-03-19T10:00:00Z"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+)
+async def list_documents_by_owner(
+        repo_owner: str,
+        limit: int = Query(20, ge=1, le=100, description="조회 개수"),
+        offset: int = Query(0, ge=0, description="시작 위치"),
+        db: Session = Depends(get_db)
+):
+    """
+    ## 사용자별 문서 목록 조회
+
+    특정 사용자(Owner)의 모든 저장소에서 생성된 문서들을 최신순으로 조회합니다.
+    저장소 이름(`repository_name`)이 `repo_owner/`로 시작하는 모든 문서를 찾습니다.
+    """
+    try:
+        # 'owner/%' 패턴으로 검색 (예: 'yjcho2010/%')
+        search_pattern = f"{repo_owner}/%"
+
+        documents = (
+            db.query(Document)
+            .filter(Document.repository_name.like(search_pattern))
+            .order_by(Document.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
+        logger.info(f"Listed {len(documents)} documents for owner: {repo_owner}")
+        return [DocumentResponse.model_validate(doc) for doc in documents]
+
+    except Exception as e:
+        logger.error(f"Error listing documents for owner {repo_owner}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
