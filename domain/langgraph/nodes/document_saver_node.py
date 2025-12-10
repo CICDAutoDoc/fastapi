@@ -40,6 +40,14 @@ def document_saver_node(state: DocumentState) -> DocumentState:
             * status = "generated"
             * document_type = "auto"
     """
+    # state가 None으로 전달되는 경우 방어
+    if state is None:
+        print("[DocumentSaver] ERROR: state is None")
+        return {
+            "status": "error",
+            "error": "Document saver received None state"
+        }
+    
     try:
         # 문서 본문이 없다면 저장을 진행할 수 없으므로 바로 실패 처리
         document_content = state.get("document_content")

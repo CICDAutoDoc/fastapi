@@ -89,6 +89,19 @@ class FullRepoDocumentLLM:
         print(f"  [{tname}] Section 'modules' 완료 ({time.time()-start:.2f}s)")
         return out
 
+    def generate_diagram(self, files, structure, repo_name) -> str:
+        import time, threading
+        tname = threading.current_thread().name
+        start = time.time()
+        print(f"  [{tname}] Section 'diagram' 시작")
+        system_prompt, builder = self.prompt_set["diagram"]
+        human_prompt = builder(files, structure, repo_name)
+        messages = [SystemMessage(content=system_prompt), HumanMessage(content=human_prompt)]
+        resp = invoke_with_retry(self.llm, messages)
+        out = self._normalize_content(resp)
+        print(f"  [{tname}] Section 'diagram' 완료 ({time.time()-start:.2f}s)")
+        return out
+
 
 # ============================================================
 #  Mock Builder – Mock 문서 생성 담당
@@ -205,8 +218,14 @@ class FullRepoDocumentBuilder:
         if "architecture" in self.sections:
             content += "## Architecture\n" + self.sections["architecture"] + "\n\n"
 
+        if "diagram" in self.sections:
+            content += "## Architecture Diagram\n" + self.sections["diagram"] + "\n\n"
+
         if "modules" in self.sections:
             content += "## Key Modules\n" + self.sections["modules"] + "\n\n"
+        
+        # 초기 문서에는 항상 Changelog 섹션을 포함하여 이후 부분 업데이트가 반영되도록 한다
+        content += "## Changelog\n현재 기준 변경 내역 없음\n\n"
 
         summary = f"{self.repo} 프로젝트 문서 - 총 {len(file_summaries)}개 파일 요약 포함"
 
@@ -274,11 +293,12 @@ def full_repository_document_generator_node(
         doc_builder = FullRepoDocumentBuilder(repo_name)
 
         # 병렬로 각 섹션 생성 (환경변수 FULL_DOC_MAX_CONCURRENCY)
-        max_workers = int(os.getenv("FULL_DOC_MAX_CONCURRENCY", "3"))
-        max_workers = max(1, min(max_workers, 3))
+        max_workers = int(os.getenv("FULL_DOC_MAX_CONCURRENCY", "5"))
+        max_workers = max(1, min(max_workers, 5))  # overview, architecture, diagram, modules (4개) + 여유분
         tasks = [
             ("overview", llm.generate_overview, (file_summaries, repo_struct, repo_name)),
             ("architecture", llm.generate_architecture, (file_summaries, repo_struct, repo_name)),
+            ("diagram", llm.generate_diagram, (file_summaries, repo_struct, repo_name)),
             ("modules", llm.generate_key_modules, (file_summaries, repo_struct, repo_name)),
         ]
 
@@ -307,6 +327,7 @@ def full_repository_document_generator_node(
 
         doc_builder.add("overview", results.get("overview", ""))
         doc_builder.add("architecture", results.get("architecture", ""))
+        doc_builder.add("diagram", results.get("diagram", ""))
         doc_builder.add("modules", results.get("modules", ""))
 
         result = doc_builder.build(file_summaries)

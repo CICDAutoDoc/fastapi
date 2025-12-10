@@ -73,7 +73,7 @@ def file_summarizer_node(
     summarizer = _get_summarizer_strategy(use_mock, openai_api_key, use_full_code)
 
     # 병렬 처리 설정
-    max_workers = int(os.getenv("FILE_SUMMARIZER_MAX_CONCURRENCY", "4"))
+    max_workers = int(os.getenv("FILE_SUMMARIZER_MAX_CONCURRENCY", "8"))
     max_workers = max(1, max_workers)
 
     file_summaries = []

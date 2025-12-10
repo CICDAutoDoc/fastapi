@@ -49,14 +49,13 @@ def repository_analyzer_node(
         print(f"[RepositoryAnalyzer] Analyzing repository: {repository_name}")
         
         if use_mock:
-            # Mock 모드: 가상의 파일 구조 생성
+            # Mock 모드: 가상의 파일 구조 생성 (MD 파일 제외)
             mock_files = [
                 {"path": "main.py", "type": "file", "language": "python"},
                 {"path": "src/app.py", "type": "file", "language": "python"},
                 {"path": "src/models/user.py", "type": "file", "language": "python"},
                 {"path": "src/utils/helper.py", "type": "file", "language": "python"},
                 {"path": "tests/test_app.py", "type": "file", "language": "python"},
-                {"path": "README.md", "type": "file", "language": "markdown"},
                 {"path": "requirements.txt", "type": "file", "language": "text"}
             ]
             
@@ -66,7 +65,7 @@ def repository_analyzer_node(
                 "total_files": len(mock_files),
                 "code_files": 5,
                 "test_files": 1,
-                "doc_files": 1,
+                "doc_files": 0,  # MD 파일 제외로 0
                 "directories": ["src", "src/models", "src/utils", "tests"]
             }
             state["status"] = "analyzing_files"
@@ -194,7 +193,7 @@ def _analyze_repository_structure_sync(repo_path: Path) -> tuple[List[Dict], Dic
         (코드 파일 목록, 구조 정보)
     """
     try:
-        # 지원하는 코드 파일 확장자
+        # 지원하는 코드 파일 확장자 (.md 제외)
         code_extensions = {
             '.py': 'python',
             '.js': 'javascript', 
@@ -223,8 +222,8 @@ def _analyze_repository_structure_sync(repo_path: Path) -> tuple[List[Dict], Dic
             '.yml': 'yaml',
             '.json': 'json',
             '.xml': 'xml',
-            '.md': 'markdown',
             '.rst': 'rst'
+            # '.md': 'markdown',  # MD 파일은 분석 대상에서 제외
         }
         
         # 무시할 디렉터리/파일 패턴
