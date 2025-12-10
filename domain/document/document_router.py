@@ -27,7 +27,7 @@ LangGraph 기반 자동 문서 생성 시스템의 문서 관리 API입니다.
 from fastapi import APIRouter, HTTPException, Depends, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 from .schema import DocumentResponse, DocumentUpdate, DiffResponse
@@ -145,7 +145,8 @@ async def update_document(
     document.status = "edited"
 
     # 3. 수정 시간 갱신
-    document.updated_at = datetime.utcnow()
+    korea_time = datetime.utcnow() + timedelta(hours=9)
+    document.updated_at = korea_time
 
     try:
         db.commit()
