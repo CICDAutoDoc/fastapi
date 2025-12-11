@@ -224,8 +224,8 @@ class FullRepoDocumentBuilder:
         if "modules" in self.sections:
             content += "## Key Modules\n" + self.sections["modules"] + "\n\n"
         
-        # 초기 문서에는 항상 Changelog 섹션을 포함하여 이후 부분 업데이트가 반영되도록 한다
-        content += "## Changelog\n현재 기준 변경 내역 없음\n\n"
+        # 초기 문서에는 빈 Changelog 섹션을 포함하여 이후 부분 업데이트가 반영되도록 한다
+        content += "## Changelog\n\n"
 
         summary = f"{self.repo} 프로젝트 문서 - 총 {len(file_summaries)}개 파일 요약 포함"
 

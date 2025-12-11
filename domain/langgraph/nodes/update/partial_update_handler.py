@@ -57,7 +57,7 @@ def handle_partial_update(
             print('[DocumentGenerator/Partial] LLM initialized')
     
     # 병렬 처리 활성화 여부 (섹션 수 >1 && 환경변수)
-    max_workers = int(os.getenv('PARTIAL_UPDATE_MAX_CONCURRENCY', '3'))
+    max_workers = int(os.getenv('PARTIAL_UPDATE_MAX_CONCURRENCY', '5'))
     max_workers = max(1, max_workers)
 
     def _process_section(section_key: str) -> tuple[str, str, int, int, bool]:

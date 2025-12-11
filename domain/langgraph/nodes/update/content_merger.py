@@ -13,16 +13,22 @@ from typing import List, Tuple
 # ============================================================
 
 def merge_changelog(old_content: str, new_entry: str) -> str:
-    """Changelog 섹션에 새 항목 추가"""
+    """챗러그 섹션에 시스템 시간과 함께 새 항목 추가"""
+    from datetime import datetime
+    
     if not new_entry or '[NO_CHANGE]' in new_entry:
         return old_content
     
-    # 기존 내용이 없으면 새 항목만 반환
-    if not old_content.strip():
-        return new_entry
+    # 현재 시간 추가 (KST 형식)
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M')
+    new_entry_with_time = f"{new_entry} - {current_time}"
+    
+    # 기존 내용이 없거나 '없음' 텍스트만 있는 경우
+    if not old_content.strip() or '없음' in old_content or 'No changes' in old_content:
+        return new_entry_with_time
     
     # 기존 내용 + 새 항목
-    return f"{old_content.rstrip()}\n{new_entry}"
+    return f"{old_content.rstrip()}\n{new_entry_with_time}"
 
 
 # ============================================================
